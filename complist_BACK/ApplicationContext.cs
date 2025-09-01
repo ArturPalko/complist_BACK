@@ -7,6 +7,7 @@
     {
         public DbSet<User> Users { get; set; }
         public DbSet<Department> Departments { get; set; }
+        public DbSet<Section> Sections { get; set; }
         public DbSet<Position> Positions { get; set; }
         public DbSet<MailType> MailTypes { get; set; }
         public DbSet<PhoneType> PhoneTypes { get; set; }
