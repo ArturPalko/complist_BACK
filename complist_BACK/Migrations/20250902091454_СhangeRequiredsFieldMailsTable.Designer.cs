@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using complist_BACK;
 
@@ -10,9 +11,11 @@ using complist_BACK;
 namespace complist_BACK.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20250902091454_СhangeRequiredsFieldMailsTable")]
+    partial class СhangeRequiredsFieldMailsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -163,9 +166,6 @@ namespace complist_BACK.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("Priority")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.ToTable("Positions");
@@ -178,9 +178,6 @@ namespace complist_BACK.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("DepartmentId")
                         .HasColumnType("int");
@@ -208,15 +205,13 @@ namespace complist_BACK.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("PositionId")
                         .HasColumnType("int");
 
                     b.Property<int?>("SectionId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("UserTypeId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -227,26 +222,7 @@ namespace complist_BACK.Migrations
 
                     b.HasIndex("SectionId");
 
-                    b.HasIndex("UserTypeId");
-
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("complist_BACK.Entities.UserType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("UserTypes");
                 });
 
             modelBuilder.Entity("PhoneUser", b =>
@@ -329,17 +305,11 @@ namespace complist_BACK.Migrations
                         .WithMany("Users")
                         .HasForeignKey("SectionId");
 
-                    b.HasOne("complist_BACK.Entities.UserType", "UserType")
-                        .WithMany("Users")
-                        .HasForeignKey("UserTypeId");
-
                     b.Navigation("Department");
 
                     b.Navigation("Position");
 
                     b.Navigation("Section");
-
-                    b.Navigation("UserType");
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.Department", b =>
@@ -376,11 +346,6 @@ namespace complist_BACK.Migrations
             modelBuilder.Entity("complist_BACK.Entities.User", b =>
                 {
                     b.Navigation("Mails");
-                });
-
-            modelBuilder.Entity("complist_BACK.Entities.UserType", b =>
-                {
-                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

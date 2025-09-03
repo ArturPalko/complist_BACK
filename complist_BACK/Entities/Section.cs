@@ -7,7 +7,7 @@
         public List<User>? Users { get; set; }
         public int DepartmentId { get; set; }
         public Department Department { get; set; }
-
+        public string? Address { get; set; }
         public List<Mail>? Mails { get; set; }
     }
 }

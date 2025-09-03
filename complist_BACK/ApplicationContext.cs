@@ -2,6 +2,8 @@
 {
     using complist_BACK.Entities;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Internal;
+    using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
     public class ApplicationContext:DbContext
     {
@@ -13,11 +15,13 @@
         public DbSet<PhoneType> PhoneTypes { get; set; }
         public DbSet<Phone> Phones { get; set; }
         public DbSet<Mail> Mails { get; set; }  
+        public DbSet<UserType> UserTypes { get; set; }
 
         public ApplicationContext(DbContextOptions<ApplicationContext> options) 
         :base(options)
         {
-  
+            
         }
+   
     }
 }

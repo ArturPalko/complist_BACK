@@ -1,10 +1,9 @@
 ﻿namespace complist_BACK.Entities
 {
-    public class Position
+    public class UserType
     {
-        public int Id {  get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public List<User> Users { get; set; }
-        public int? Priority { get; set; }
     }
 }
