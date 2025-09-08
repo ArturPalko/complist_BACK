@@ -26,8 +26,11 @@ var app = builder.Build();
 app.UseCors("AllowFrontend");
 
 
+app.Map("/mails/{mailType}", async (string mailType, ApplicationContext db) =>
+{
+    return await MailsService.GetMails(mailType, db);
+});
 
-app.Map("/dovidniki", UserService.GetUsers);
 
 app.UseHttpsRedirection();
 
