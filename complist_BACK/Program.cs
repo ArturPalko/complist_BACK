@@ -1,5 +1,6 @@
 
 using complist_BACK;
+using complist_BACK.RequestHandlers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.SqlServer;
 
@@ -31,6 +32,10 @@ app.Map("/mails/{mailType}", async (string mailType, ApplicationContext db) =>
     return await MailsService.GetMails(mailType, db);
 });
 
+app.Map("/phones", async (ApplicationContext db) =>
+{
+    return await PhonesService.GetPhones(db);
+});
 
 app.UseHttpsRedirection();
 

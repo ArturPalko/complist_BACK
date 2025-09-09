@@ -24,7 +24,7 @@
 
             switch (mailType)
             {
-                case "GOV-UA":
+                case "Gov-ua":
                     mails = mailsData.Select(m => new
                     {
                         MailName = m.Name,
@@ -42,11 +42,11 @@
                     {
                         PreviousName = m.PreviousName,
                         Name = m.Name,
-                        Owner = m.Department?.Name
-                              ?? m.Section?.Name
-                              ?? m.User?.Department?.Name
-                              ?? m.User?.Section?.Name
+                        Owner = m.User?.Section?.Name
                               ?? m.User?.Name
+                              ?? m.Department?.Name
+                              ?? m.Section?.Name
+                              ?? m.User?.Department?.Name 
                               ?? "",
                     }).ToList();
                     break;
