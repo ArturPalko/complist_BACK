@@ -4,6 +4,8 @@
     using Microsoft.EntityFrameworkCore;
     using Microsoft.AspNetCore.Http;
     using complist_BACK.Entities;
+    using Microsoft.VisualBasic;
+    using System.Linq;
 
     public static class MailsService
     {
@@ -40,13 +42,14 @@
                 case "Lotus":
                     mails = mailsData.Select(m => new
                     {
+                        Id = m.Id,
                         PreviousName = m.PreviousName,
                         Name = m.Name,
                         Owner = m.User?.Section?.Name
                               ?? m.User?.Name
                               ?? m.Department?.Name
                               ?? m.Section?.Name
-                              ?? m.User?.Department?.Name 
+                              ?? m.User?.Department?.Name
                               ?? "",
                     }).ToList();
                     break;
@@ -56,6 +59,13 @@
             }
 
             return Results.Json(mails);
+        }
+        public static async Task<IResult> GetLotusPasswords(ApplicationContext db)
+        {
+            var passwordsData = await db.Mails.Include(m => m.MailType).ToListAsync(); ;
+            var passwords = passwordsData.Where(m => m.MailType.Name == "Lotus").Select(m => new {id=m.Id, password = m.Password });
+            return Results.Json(passwords);
+
         }
     }
 }

@@ -32,10 +32,16 @@ app.Map("/mails/{mailType}", async (string mailType, ApplicationContext db) =>
     return await MailsService.GetMails(mailType, db);
 });
 
-app.Map("/phones", async (ApplicationContext db) =>
+app.Map("/phones/", async (ApplicationContext db) =>
 {
     return await PhonesService.GetPhones(db);
 });
+
+app.Map("/mails/Lotus/passwords", async (ApplicationContext db) =>
+{
+    return await MailsService.GetLotusPasswords(db);
+});
+
 
 app.UseHttpsRedirection();
 
