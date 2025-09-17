@@ -1,6 +1,5 @@
 ﻿using complist_BACK.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace complist_BACK.RequestHandlers
 {
@@ -21,48 +20,61 @@ namespace complist_BACK.RequestHandlers
                                      .ToListAsync();
 
             var userPhones = phonesData
-        .SelectMany(p => p.Users.Select(u => new
-        {
-                 User = new
-                 {
-                     Id = u.Id,
-                     Name = u.Name,
-                     UserType = u.UserType?.Id,
-                     UserPosition = u.Position?.Name,
-                     UserPositionPriority = u.Position?.Priority,
-                     DepartmentId = u.Department?.Id ?? u.Section?.DepartmentId,
-                     DepartmentName = u.Department?.Name,
-                     SectionId = u.Section?.Id,
-                     SectionName = u.Section?.Name
-                 },
-                 Phone = new { PhoneName = p.Number, PhoneType = p.PhoneType.Name }
-             }))
-             .GroupBy(x => x.User) 
-             .Select(g => new
-             {
-                 UserId = g.Key.Id,
-                 UserName = g.Key.Name,
-                 UserType = g.Key.UserType,
-                 UserPosition = g.Key.UserPosition,
-                 UserPositionPriority = g.Key.UserPositionPriority,
-                 DepartmentId = g.Key.DepartmentId,
-                 DepartmentName = g.Key.DepartmentName,
-                 SectionId = g.Key.SectionId,
-                 SectionName = g.Key.SectionName,
-                 Phones = g.Select(x => x.Phone).ToList()
-             })
-             .ToList();
-
+                .SelectMany(p => p.Users.Select(u => new
+                {
+                    User = new
+                    {
+                        Id = u.Id,
+                        Name = u.Name,
+                        UserTypeId = u.UserType?.Id,
+                        UserTypePriority = u.UserType?.Id,
+                        UserPosition = u.Position?.Name,
+                        UserPositionPriority = u.Position?.Priority ?? int.MaxValue,
+                        DepartmentId = u.Department?.Id ?? u.Section?.DepartmentId,
+                        DepartmentName = u.Department?.Name ?? u.Section?.Department?.Name,
+                        DepartmentPriority = u.Department != null
+                            ? u.Department.PhonesPagePriority
+                            : u.Section.Department.PhonesPagePriority,
+                        SectionId = u.Section?.Id,
+                        SectionName = u.Section?.Name
+                    },
+                    Phone = new { PhoneName = p.Number, PhoneType = p.PhoneType.Name }
+                }))
+                // групуємо по користувачу
+                .GroupBy(x => x.User.Id)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    UserName = g.Select(u => u.User.Name).Distinct().FirstOrDefault(),
+                    UserTypeId = g.Select(u => u.User.UserTypeId).Distinct().FirstOrDefault(),
+                    UserTypePriority = g.Select(u => u.User.UserTypePriority).Min(),
+                    UserPosition = g.Select(u => u.User.UserPosition).Distinct().FirstOrDefault(),
+                    UserPositionPriority = g.Select(u => u.User.UserPositionPriority).Min(),
+                    DepartmentId = g.Select(u => u.User.DepartmentId).Distinct().FirstOrDefault(),
+                    DepartmentName = g.Select(u => u.User.DepartmentName).Distinct().FirstOrDefault(),
+                    DepartmentPriority = g.Select(u => u.User.DepartmentPriority).Where(p => p.HasValue).Min(),
+                    SectionId = g.Select(u => u.User.SectionId).Distinct().FirstOrDefault(),
+                    SectionName = g.Select(u => u.User.SectionName).Distinct().FirstOrDefault(),
+                    Phones = g.Select(x => x.Phone).Distinct().ToList()
+                })
+                .ToList();
 
             var groupedByDepartment = userPhones
                 .GroupBy(u => u.DepartmentId)
                 .Select(deptGroup => new
                 {
                     DepartmentId = deptGroup.Key,
-                    DepartmentName = deptGroup.First().DepartmentName,
+                    DepartmentName = deptGroup
+                        .Select(u => u.DepartmentName)
+                        .FirstOrDefault(name => !string.IsNullOrEmpty(name)) ?? "Unknown",
+                    DepartmentPriority = deptGroup
+                        .Select(u => u.DepartmentPriority)
+                        .Where(p => p.HasValue)
+                        .DefaultIfEmpty(int.MaxValue)
+                        .Min(),
                     Users = deptGroup
                         .Where(u => u.SectionId == null)
-                        .OrderBy(u => u.UserType)
+                        .OrderBy(u => u.UserTypePriority)
                         .ThenBy(u => u.UserPositionPriority)
                         .ToList(),
                     Sections = deptGroup
@@ -71,23 +83,20 @@ namespace complist_BACK.RequestHandlers
                         .Select(sectionGroup => new
                         {
                             SectionId = sectionGroup.Key,
-                            SectionName = sectionGroup.First().SectionName,
+                            SectionName = sectionGroup
+                                .Select(u => u.SectionName)
+                                .FirstOrDefault(name => !string.IsNullOrEmpty(name)) ?? "Unknown",
                             Users = sectionGroup
-                                .OrderBy(u => u.UserType)
+                                .OrderBy(u => u.UserTypePriority)
                                 .ThenBy(u => u.UserPositionPriority)
                                 .ToList()
                         })
                         .ToList()
                 })
+                .OrderBy(d => d.DepartmentPriority)
                 .ToList();
 
             return Results.Json(groupedByDepartment);
         }
     }
-    }
-
-
-
-
-
-
+}

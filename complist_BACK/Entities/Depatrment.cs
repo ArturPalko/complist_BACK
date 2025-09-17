@@ -6,8 +6,9 @@
         public string Name { get; set; }
         public List<Section>? Sections { get; set; }
         public List<User>? Users { get; set; }
-        public List<Mail>? Mails { get; set; }   
-        
+        public List<Mail>? Mails { get; set; }
+        public int? PhonesPagePriority { get; set; }
+
 
     }
 }
