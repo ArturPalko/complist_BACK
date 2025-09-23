@@ -27,16 +27,19 @@
             switch (mailType)
             {
                 case "Gov-ua":
-                    mails = mailsData.Select(m => new
-                    {
-                        MailName = m.Name,
-                        DepartmentOrSection = m.Department?.Name
-                                             ?? m.Section?.Name
-                                             ?? m.User?.Department?.Name
-                                             ?? m.User?.Section?.Name
-                                             ?? "",
-                        UserName = m.User != null ? m.User.Name : ""
-                    }).ToList();
+                     mails = await db.Mails
+    .Where(m => m.MailType.Name == mailType)
+    .Select(m => new
+    {
+        MailName = m.Name,
+        DepartmentOrSection = m.Department != null ? m.Department.Name :
+                              m.Section != null ? m.Section.Name :
+                              m.User.Department != null ? m.User.Department.Name :
+                              m.User.Section != null ? m.User.Section.Name : "",
+        UserName = m.User != null ? m.User.Name : ""
+    })
+    .ToListAsync();
+
                     break;
 
                 case "Lotus":
