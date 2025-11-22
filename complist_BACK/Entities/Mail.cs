@@ -16,5 +16,6 @@ namespace complist_BACK.Entities
         public Section? Section { get; set; }
         public int? UserId { get; set; }
         public User? User { get; set; }
+        public List<ResponsibleUser> ResponsibleUsers { get; set; } = new List<ResponsibleUser>();
     }
 }

@@ -16,6 +16,7 @@
         public DbSet<Phone> Phones { get; set; }
         public DbSet<Mail> Mails { get; set; }  
         public DbSet<UserType> UserTypes { get; set; }
+        public DbSet<ResponsibleUser> ResponsibleUsers { get; set; }
 
         public ApplicationContext(DbContextOptions<ApplicationContext> options) 
         :base(options)

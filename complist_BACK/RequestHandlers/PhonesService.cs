@@ -83,6 +83,9 @@ namespace complist_BACK.RequestHandlers
                         .Select(sectionGroup => new
                         {
                             SectionId = sectionGroup.Key,
+                            DepartmentName = sectionGroup
+                                .Select(u => u.DepartmentName)
+                                .FirstOrDefault(name => !string.IsNullOrEmpty(name)) ?? "Unknown",
                             SectionName = sectionGroup
                                 .Select(u => u.SectionName)
                                 .FirstOrDefault(name => !string.IsNullOrEmpty(name)) ?? "Unknown",
