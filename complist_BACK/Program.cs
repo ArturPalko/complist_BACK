@@ -1,8 +1,10 @@
 
 using complist_BACK;
+using complist_BACK.Entities;
 using complist_BACK.RequestHandlers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.SqlServer;
+using Microsoft.VisualBasic;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,9 +39,9 @@ app.Map("/phones/", async (ApplicationContext db) =>
     return await PhonesService.GetPhones(db);
 });
 
-app.Map("/mails/Lotus/passwords", async (ApplicationContext db) =>
+app.Map("/mails/{mailType}/passwords", async (string mailType, ApplicationContext db) =>
 {
-    return await MailsService.GetLotusPasswords(db);
+    return await MailsService.GetMailsPasswords(mailType, db);
 });
 
 

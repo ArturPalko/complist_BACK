@@ -1,8 +1,7 @@
 ﻿namespace complist_BACK
 {
-    using Microsoft.EntityFrameworkCore;
     using Microsoft.AspNetCore.Http;
-    using complist_BACK.Entities;
+    using Microsoft.EntityFrameworkCore;
     using System.Linq;
 
     public static class MailsService
@@ -64,14 +63,14 @@
             return Results.Json(mails);
         }
 
-        public static async Task<IResult> GetLotusPasswords(ApplicationContext db)
+        public static async Task<IResult> GetMailsPasswords(string mailType, ApplicationContext db)
         {
             var passwordsData = await db.Mails
                                         .Include(m => m.MailType)
                                         .ToListAsync();
 
             var passwords = passwordsData
-                                .Where(m => m.MailType.Name == "Lotus")
+                                .Where(m => m.MailType.Name == mailType)
                                 .Select(m => new { id = m.Id, password = m.Password });
 
             return Results.Json(passwords);

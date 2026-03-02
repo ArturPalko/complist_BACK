@@ -7,6 +7,7 @@
 
     public class ApplicationContext:DbContext
     {
+        public DbSet<Login> Logins { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Section> Sections { get; set; }
@@ -17,6 +18,7 @@
         public DbSet<Mail> Mails { get; set; }  
         public DbSet<UserType> UserTypes { get; set; }
         public DbSet<ResponsibleUser> ResponsibleUsers { get; set; }
+
 
         public ApplicationContext(DbContextOptions<ApplicationContext> options) 
         :base(options)
