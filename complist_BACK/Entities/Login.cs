@@ -11,7 +11,7 @@ namespace complist_BACK.Entities
 
         [Required]
         [MaxLength(10)]
-        public string Username { get; set; }
+        public string LoginName { get; set; }
 
         [Required]
         [MaxLength(10)]
