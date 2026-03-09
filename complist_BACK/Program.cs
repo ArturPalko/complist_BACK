@@ -2,6 +2,7 @@
 using complist_BACK;
 using complist_BACK.Entities;
 using complist_BACK.RequestHandlers;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
@@ -76,6 +77,12 @@ app.MapPost("/login", async (
     HttpContext httpContext) =>
 {
     return await LoginService.Login(request, db, httpContext);
+});
+
+app.MapPost("/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Ok(new { message = "Logged out successfully" });
 });
 
 
