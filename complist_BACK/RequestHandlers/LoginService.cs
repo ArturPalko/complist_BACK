@@ -6,6 +6,7 @@
     using Microsoft.EntityFrameworkCore;
     using complist_BACK.Entities;
     using Microsoft.AspNetCore.Identity.Data;
+    using System;
 
     public static class LoginService
     {
@@ -50,6 +51,25 @@
                 message = "Logged in successfully",
                 userName = user.LoginName
             });
+        }
+        public static async Task<IResult> LogOut(HttpContext context)
+        {
+            await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Results.Ok(new { message = "Logged out successfully" });
+        }
+        public static IResult ChechAuthorization(HttpContext context)
+        {
+            if (!context.User.Identity?.IsAuthenticated ?? true)
+                return Results.Unauthorized();
+
+            var authData = new
+            {
+                success = true,
+                message = "Logged in successfully",
+                userName = context.User.Identity?.Name
+            };
+
+            return Results.Ok(authData);
         }
     }
     }

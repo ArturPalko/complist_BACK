@@ -71,18 +71,24 @@ app.Map("/mails/{mailType}/passwords", async (string mailType, ApplicationContex
 })
 .RequireAuthorization("AdminOnly"); // ?? тільки для admin
 
-app.MapPost("/login", async (
+
+app.MapGet("/checkAuth", (HttpContext context) =>
+{
+    return LoginService.ChechAuthorization(context);
+})
+.RequireAuthorization();
+
+app.MapPost("/login",  (
     Login request,
     ApplicationContext db,
     HttpContext httpContext) =>
 {
-    return await LoginService.Login(request, db, httpContext);
+    return  LoginService.Login(request, db, httpContext);
 });
 
-app.MapPost("/logout", async (HttpContext context) =>
+app.MapPost("/logout",  (HttpContext context) =>
 {
-    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    return Results.Ok(new { message = "Logged out successfully" });
+    return  LoginService.LogOut(context);
 });
 
 
