@@ -12,6 +12,7 @@
                 .Where(m => m.MailType.Name == mailType)
                 .Include(m => m.Department)
                 .Include(m => m.Section)
+                 .ThenInclude(s => s.Department) // ← Додали цей рядок!
                 .Include(m => m.User)
                     .ThenInclude(u => u.Department)
                 .Include(m => m.User)
@@ -37,7 +38,18 @@
                     OwnerType = m.User != null ? "User"
                                 : m.Department != null ? "Department"
                                 : m.Section != null ? "Section" : "",
-                    PasswordKnown = !string.IsNullOrEmpty(m.Password)
+                    PasswordKnown = !string.IsNullOrEmpty(m.Password),
+                    DepSec = new
+                    {
+                        Department = m.Department?.Name
+             ?? m.User?.Department?.Name
+             ?? m.Section?.Department?.Name
+             ?? m.User?.Section?.Department?.Name
+             ?? "",
+                        Section = m.Section?.Name
+              ?? m.User?.Section?.Name
+              ?? ""
+                    }
                 }).ToList(),
 
                 "Lotus" => mailsData.Select(m => new
@@ -54,8 +66,19 @@
                     OwnerType = m.User != null ? "User"
                                 : m.Department != null ? "Department"
                                 : m.Section != null ? "Section" : "",
-                    PasswordKnown = !string.IsNullOrEmpty(m.Password)
+                    PasswordKnown = !string.IsNullOrEmpty(m.Password),
+                    DepSec = new
+                    {
+                        Department = m.Department?.Name
+             ?? m.User?.Department?.Name
+             ?? m.Section?.Department?.Name
+             ?? "",
+                        Section = m.Section?.Name
+              ?? m.User?.Section?.Name
+              ?? ""
+                    }
                 }).ToList(),
+
 
                 _ => Results.Json(new { Message = "Unknown mail type" })
             };
