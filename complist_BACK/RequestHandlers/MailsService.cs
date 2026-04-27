@@ -33,6 +33,7 @@
                                           ?? m.User?.Section?.Name
                                           ?? "",
                     Id = m.Id,
+                    Priority = m.Priority,
                     userName = m.User!=null ? m.User.Name : "",
                     ResponsibleUser = m.ResponsibleUsers.Select(mo => mo.User.Name).FirstOrDefault() ?? "",
                     OwnerType = m.User != null ? "User"
@@ -50,11 +51,12 @@
               ?? m.User?.Section?.Name
               ?? ""
                     }
-                }).ToList(),
+                }).ToList().OrderBy(m=> m.Priority),
 
                 "Lotus" => mailsData.Select(m => new
                 {
                     Id = m.Id,
+                    Priority = m.Priority,
                     PreviousName = m.PreviousName,
                     Name = m.Name,
                     Owner = m.User?.Name
