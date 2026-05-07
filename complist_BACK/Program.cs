@@ -2,6 +2,7 @@
 using complist_BACK;
 using complist_BACK.Entities;
 using complist_BACK.RequestHandlers;
+using complist_BACK.RequestHandlers.MailService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
