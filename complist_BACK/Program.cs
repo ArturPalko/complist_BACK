@@ -94,19 +94,59 @@ app.MapPost("/logout",  (HttpContext context) =>
 });
 
 
-app.MapPost("/changeOrder/{pageName}", async (ApplicationContext db, string pageName, JsonElement data) =>
+app.MapPost("/changeOrder/{pageName}", async (
+    ApplicationContext db,
+    string pageName,
+    JsonElement data) =>
 {
-  
+    /* =========================
+       PHONES
+    ========================= */
+
+    if (pageName == "phones")
+    {
+        var departments = await db.Departments
+            .ToListAsync();
+
+        foreach (var item in data.EnumerateArray())
+        {
+            int id = item.GetProperty("id").GetInt32();
+
+            int priority =
+                item.GetProperty("priority").GetInt32();
+
+            var department = departments
+                .FirstOrDefault(d => d.Id == id);
+
+            if (department != null)
+            {
+                department.PhonesPagePriority =
+                    priority;
+            }
+        }
+
+        await db.SaveChangesAsync();
+
+        return Results.Ok();
+    }
+
+    /* =========================
+       DEFAULT
+    ========================= */
 
     var mails = await db.Mails
         .ToListAsync();
 
     foreach (var item in data.EnumerateArray())
     {
-        int id = item.GetProperty("id").GetInt32();
-        int priority = item.GetProperty("priority").GetInt32();
+        int id =
+            item.GetProperty("id").GetInt32();
 
-        var mail = mails.FirstOrDefault(m => m.Id == id);
+        int priority =
+            item.GetProperty("priority").GetInt32();
+
+        var mail = mails
+            .FirstOrDefault(m => m.Id == id);
 
         if (mail != null)
         {
