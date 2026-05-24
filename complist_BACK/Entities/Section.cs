@@ -9,5 +9,6 @@
         public Department Department { get; set; }
         public string? Address { get; set; }
         public List<Mail>? Mails { get; set; }
+        public int? PhonesPagePriority { get; set; }
     }
 }

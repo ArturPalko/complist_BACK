@@ -8,16 +8,17 @@ namespace complist_BACK.RequestHandlers
         public static async Task<IResult> GetPhones(ApplicationContext db)
         {
             var phonesData = await db.Phones
-                                     .Include(p => p.PhoneType)
-                                     .Include(p => p.Users)
-                                         .ThenInclude(u => u.Department)
-                                     .Include(p => p.Users)
-                                         .ThenInclude(u => u.Section)
-                                     .Include(p => p.Users)
-                                         .ThenInclude(u => u.Position)
-                                     .Include(p => p.Users)
-                                         .ThenInclude(u => u.UserType)
-                                     .ToListAsync();
+                .Include(p => p.PhoneType)
+                .Include(p => p.Users)
+                    .ThenInclude(u => u.Department)
+                .Include(p => p.Users)
+                    .ThenInclude(u => u.Section)
+                        .ThenInclude(s => s.Department)
+                .Include(p => p.Users)
+                    .ThenInclude(u => u.Position)
+                .Include(p => p.Users)
+                    .ThenInclude(u => u.UserType)
+                .ToListAsync();
 
             var userPhones = phonesData
                 .SelectMany(p => p.Users.Select(u => new
@@ -26,38 +27,65 @@ namespace complist_BACK.RequestHandlers
                     {
                         Id = u.Id,
                         Name = u.Name,
+
                         UserTypeId = u.UserType?.Id,
                         UserType = u.UserType?.Name,
                         UserTypePriority = u.UserType?.Id,
+
                         UserPosition = u.Position?.Name,
                         UserPositionPriority = u.Position?.Priority ?? int.MaxValue,
+
                         DepartmentId = u.Department?.Id ?? u.Section?.DepartmentId,
                         DepartmentName = u.Department?.Name ?? u.Section?.Department?.Name,
+
                         DepartmentPriority = u.Department != null
                             ? u.Department.PhonesPagePriority
-                            : u.Section.Department.PhonesPagePriority,
+                            : u.Section!.Department.PhonesPagePriority,
+
                         SectionId = u.Section?.Id,
-                        SectionName = u.Section?.Name
+                        SectionName = u.Section?.Name,
+
+                        SectionPriority = u.Section?.PhonesPagePriority ?? int.MaxValue
                     },
-                    Phone = new { PhoneName = p.Number, PhoneType = p.PhoneType.Name }
+
+                    Phone = new
+                    {
+                        PhoneName = p.Number,
+                        PhoneType = p.PhoneType.Name
+                    }
                 }))
-                // групуємо по користувачу
                 .GroupBy(x => x.User.Id)
                 .Select(g => new
                 {
                     UserId = g.Key,
-                    UserName = g.Select(u => u.User.Name).Distinct().FirstOrDefault(),
-                    UserTypeId = g.Select(u => u.User.UserTypeId).Distinct().FirstOrDefault(),
-                    UserType =g.Select(u => u.User.UserType).Distinct().FirstOrDefault(),
+
+                    UserName = g.Select(u => u.User.Name).FirstOrDefault(),
+
+                    UserTypeId = g.Select(u => u.User.UserTypeId).FirstOrDefault(),
+                    UserType = g.Select(u => u.User.UserType).FirstOrDefault(),
+
                     UserTypePriority = g.Select(u => u.User.UserTypePriority).Min(),
-                    UserPosition = g.Select(u => u.User.UserPosition).Distinct().FirstOrDefault(),
+
+                    UserPosition = g.Select(u => u.User.UserPosition).FirstOrDefault(),
                     UserPositionPriority = g.Select(u => u.User.UserPositionPriority).Min(),
-                    DepartmentId = g.Select(u => u.User.DepartmentId).Distinct().FirstOrDefault(),
-                    DepartmentName = g.Select(u => u.User.DepartmentName).Distinct().FirstOrDefault(),
-                    DepartmentPriority = g.Select(u => u.User.DepartmentPriority).Where(p => p.HasValue).Min(),
-                    SectionId = g.Select(u => u.User.SectionId).Distinct().FirstOrDefault(),
-                    SectionName = g.Select(u => u.User.SectionName).Distinct().FirstOrDefault(),
-                    Phones = g.Select(x => x.Phone).Distinct().ToList()
+
+                    DepartmentId = g.Select(u => u.User.DepartmentId).FirstOrDefault(),
+                    DepartmentName = g.Select(u => u.User.DepartmentName).FirstOrDefault(),
+
+                    DepartmentPriority = g.Select(u => u.User.DepartmentPriority)
+                                          .DefaultIfEmpty(int.MaxValue)
+                                          .Min(),
+
+                    SectionId = g.Select(u => u.User.SectionId).FirstOrDefault(),
+                    SectionName = g.Select(u => u.User.SectionName).FirstOrDefault(),
+
+                    SectionPriority = g.Select(u => u.User.SectionPriority)
+                                       .DefaultIfEmpty(int.MaxValue)
+                                       .Min(),
+
+                    Phones = g.Select(x => x.Phone)
+                              .Distinct()
+                              .ToList()
                 })
                 .ToList();
 
@@ -66,42 +94,51 @@ namespace complist_BACK.RequestHandlers
                 .Select(deptGroup => new
                 {
                     DepartmentId = deptGroup.Key,
+
                     DepartmentName = deptGroup
                         .Select(u => u.DepartmentName)
-                        .FirstOrDefault(name => !string.IsNullOrEmpty(name)) ?? "Unknown",
+                        .FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? "Unknown",
+
                     DepartmentPriority = deptGroup
                         .Select(u => u.DepartmentPriority)
-                        .Where(p => p.HasValue)
                         .DefaultIfEmpty(int.MaxValue)
                         .Min(),
+
                     Users = deptGroup
                         .Where(u => u.SectionId == null)
                         .OrderBy(u => u.UserTypePriority)
                         .ThenBy(u => u.UserPositionPriority)
                         .ToList(),
+
                     Sections = deptGroup
-    .Where(u => u.SectionId != null)
-    .GroupBy(u => u.SectionId)
-    .Select(sectionGroup =>
-    {
-        var first = sectionGroup.First();
+                        .Where(u => u.SectionId != null)
+                        .GroupBy(u => u.SectionId)
+                        .Select(sectionGroup => new
+                        {
+                            SectionId = sectionGroup.Key,
 
-        return new
-        {
-            SectionId = first.SectionId,   // 🔥 БЕРЕМО З ЕЛЕМЕНТА, НЕ З KEY
-            DepartmentId = deptGroup.Key,
+                            DepartmentId = deptGroup.Key,
 
-            DepartmentName = first.DepartmentName ?? "Unknown",
+                            DepartmentName = sectionGroup
+                                .Select(x => x.DepartmentName)
+                                .FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? "Unknown",
 
-            SectionName = first.SectionName ?? "Unknown",
+                            SectionName = sectionGroup
+                                .Select(x => x.SectionName)
+                                .FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? "Unknown",
 
-            Users = sectionGroup
-                .OrderBy(u => u.UserTypePriority)
-                .ThenBy(u => u.UserPositionPriority)
-                .ToList()
-        };
-    })
-    .ToList()
+                            SectionPriority = sectionGroup
+                                .Select(x => x.SectionPriority)
+                                .DefaultIfEmpty(int.MaxValue)
+                                .Min(),
+
+                            Users = sectionGroup
+                                .OrderBy(u => u.UserTypePriority)
+                                .ThenBy(u => u.UserPositionPriority)
+                                .ToList()
+                        })
+                        .OrderBy(s => s.SectionPriority)
+                        .ToList()
                 })
                 .OrderBy(d => d.DepartmentPriority)
                 .ToList();
