@@ -105,20 +105,76 @@ app.MapPost("/changeOrder/{pageName}", async (
 
     if (pageName == "phones")
     {
+
+        if (
+            data.ValueKind == JsonValueKind.Object &&
+            data.TryGetProperty("depId", out var depIdProp)
+        )
+        {
+            int depId = depIdProp.GetInt32();
+
+            var sections = await db.Sections
+                .Where(s => s.DepartmentId == depId)
+                .ToListAsync();
+
+            var sectionMap =
+                sections.ToDictionary(s => s.Id);
+
+            var items =
+                data.GetProperty("items");
+
+            foreach (var item in items.EnumerateArray())
+            {
+                int id =
+                    item.GetProperty("id").GetInt32();
+
+                int priority =
+                    item.GetProperty("priority").GetInt32();
+
+                if (
+                    sectionMap.TryGetValue(
+                        id,
+                        out var section
+                    )
+                )
+                {
+                    section.PhonesPagePriority = priority;
+                }
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok();
+        }
+
+        /* =========================
+           DEPARTMENTS REORDER
+           payload:
+           [
+             { "id": 1, "priority": 10 }
+           ]
+        ========================= */
+
         var departments = await db.Departments
             .ToListAsync();
 
+        var departmentMap =
+            departments.ToDictionary(d => d.Id);
+
         foreach (var item in data.EnumerateArray())
         {
-            int id = item.GetProperty("id").GetInt32();
+            int id =
+                item.GetProperty("id").GetInt32();
 
             int priority =
                 item.GetProperty("priority").GetInt32();
 
-            var department = departments
-                .FirstOrDefault(d => d.Id == id);
-
-            if (department != null)
+            if (
+                departmentMap.TryGetValue(
+                    id,
+                    out var department
+                )
+            )
             {
                 department.PhonesPagePriority =
                     priority;
@@ -137,6 +193,9 @@ app.MapPost("/changeOrder/{pageName}", async (
     var mails = await db.Mails
         .ToListAsync();
 
+    var mailMap =
+        mails.ToDictionary(m => m.Id);
+
     foreach (var item in data.EnumerateArray())
     {
         int id =
@@ -145,10 +204,12 @@ app.MapPost("/changeOrder/{pageName}", async (
         int priority =
             item.GetProperty("priority").GetInt32();
 
-        var mail = mails
-            .FirstOrDefault(m => m.Id == id);
-
-        if (mail != null)
+        if (
+            mailMap.TryGetValue(
+                id,
+                out var mail
+            )
+        )
         {
             mail.Priority = priority;
         }
