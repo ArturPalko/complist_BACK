@@ -30,8 +30,9 @@ namespace complist_BACK.RequestHandlers
 
                         UserTypeId = u.UserType?.Id,
                         UserType = u.UserType?.Name,
-                        UserTypePriority = u.UserType?.Id,
+                        UserTypePriority = u.UserType?.Priority ?? int.MaxValue,
 
+                        UserPositionId = u.PositionId,
                         UserPosition = u.Position?.Name,
                         UserPositionPriority = u.Position?.Priority ?? int.MaxValue,
 
@@ -64,30 +65,40 @@ namespace complist_BACK.RequestHandlers
                     UserTypeId = g.Select(u => u.User.UserTypeId).FirstOrDefault(),
                     UserType = g.Select(u => u.User.UserType).FirstOrDefault(),
 
-                    UserTypePriority = g.Select(u => u.User.UserTypePriority).Min(),
+                    UserTypePriority = g.Select(u => u.User.UserTypePriority)
+                        .DefaultIfEmpty(int.MaxValue)
+                        .Min(),
 
+                    UserPositionId = g.Select(u => u.User.UserPositionId).FirstOrDefault(),
                     UserPosition = g.Select(u => u.User.UserPosition).FirstOrDefault(),
-                    UserPositionPriority = g.Select(u => u.User.UserPositionPriority).Min(),
+
+                    UserPositionPriority = g.Select(u => u.User.UserPositionPriority)
+                        .DefaultIfEmpty(int.MaxValue)
+                        .Min(),
 
                     DepartmentId = g.Select(u => u.User.DepartmentId).FirstOrDefault(),
                     DepartmentName = g.Select(u => u.User.DepartmentName).FirstOrDefault(),
 
                     DepartmentPriority = g.Select(u => u.User.DepartmentPriority)
-                                          .DefaultIfEmpty(int.MaxValue)
-                                          .Min(),
+                        .DefaultIfEmpty(int.MaxValue)
+                        .Min(),
 
                     SectionId = g.Select(u => u.User.SectionId).FirstOrDefault(),
                     SectionName = g.Select(u => u.User.SectionName).FirstOrDefault(),
 
                     SectionPriority = g.Select(u => u.User.SectionPriority)
-                                       .DefaultIfEmpty(int.MaxValue)
-                                       .Min(),
+                        .DefaultIfEmpty(int.MaxValue)
+                        .Min(),
 
                     Phones = g.Select(x => x.Phone)
-                              .Distinct()
-                              .ToList()
+                        .Distinct()
+                        .ToList()
                 })
                 .ToList();
+
+            // =========================
+            // GROUP BY DEPARTMENT
+            // =========================
 
             var groupedByDepartment = userPhones
                 .GroupBy(u => u.DepartmentId)
@@ -118,10 +129,6 @@ namespace complist_BACK.RequestHandlers
                             SectionId = sectionGroup.Key,
 
                             DepartmentId = deptGroup.Key,
-
-                            DepartmentName = sectionGroup
-                                .Select(x => x.DepartmentName)
-                                .FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? "Unknown",
 
                             SectionName = sectionGroup
                                 .Select(x => x.SectionName)
