@@ -56,6 +56,44 @@ app.UseAuthentication(); // Обов’язково перед UseAuthorization 
 app.UseAuthorization();
 
 
+app.MapGet("/dictionaries", async (ApplicationContext db) =>
+{
+ /*   var users = await db.Users
+        .Select(u => new
+        {
+            id = u.Id,
+            userName = u.Name,
+            positionName = u.Position.Name,
+            userTypeName = u.UserType.Name
+        })
+        .ToListAsync();
+ */
+
+    var positions = await db.Positions
+        .Select(p => new
+        {
+            id = p.Id,
+            positionName = p.Name,
+            priority = p.Priority
+        })
+        .ToListAsync();
+
+    var userTypes = await db.UserTypes
+        .Select(t => new
+        {
+            id = t.Id,
+            userTypeName = t.Name,
+            priority = t.Priority
+        })
+        .ToListAsync();
+
+    return Results.Ok(new
+    {
+  //      users,
+        positions,
+        userTypes
+    });
+});
 
 app.Map("/mails/{mailType}", async (string mailType, ApplicationContext db) =>
 {
