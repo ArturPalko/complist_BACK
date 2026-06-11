@@ -58,18 +58,8 @@ app.UseAuthorization();
 
 app.MapGet("/dictionaries", async (ApplicationContext db) =>
 {
- /*   var users = await db.Users
-        .Select(u => new
-        {
-            id = u.Id,
-            userName = u.Name,
-            positionName = u.Position.Name,
-            userTypeName = u.UserType.Name
-        })
-        .ToListAsync();
- */
-
     var positions = await db.Positions
+        .OrderBy(p => p.Priority)
         .Select(p => new
         {
             id = p.Id,
@@ -79,21 +69,22 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
         .ToListAsync();
 
     var userTypes = await db.UserTypes
+        .OrderBy(t => t.Priority)
         .Select(t => new
         {
             id = t.Id,
-            userTypeName = t.Name,
+            userType = t.Name,
             priority = t.Priority
         })
         .ToListAsync();
 
     return Results.Ok(new
     {
-  //      users,
         positions,
         userTypes
     });
 });
+
 
 app.Map("/mails/{mailType}", async (string mailType, ApplicationContext db) =>
 {
