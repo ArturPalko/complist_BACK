@@ -3,6 +3,7 @@ using complist_BACK;
 using complist_BACK.Entities;
 using complist_BACK.RequestHandlers;
 using complist_BACK.RequestHandlers.MailService;
+using complist_BACK.RequestHandlers.PositionService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.SqlServer;
 using Microsoft.VisualBasic;
+using System;
 using System.Text.Json;
 
 
@@ -30,9 +32,10 @@ options.AddPolicy("AllowFrontend", policy =>
 });
 });
 
-string connection = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(connection));
+string? connection = builder.Configuration.GetConnectionString("DefaultConnection");
 
+builder.Services.AddDbContext<ApplicationContext>(options =>
+    options.UseSqlServer(connection));
 // Cookie аутентифікація
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -254,6 +257,13 @@ app.MapPost("/changeOrder/{pageName}", async (
     await db.SaveChangesAsync();
     return Results.Ok();
 });
+
+
+app.MapPost("/api/positions", PositionsService.Create);
+
+app.MapPost("/api/positions/delete", PositionsService.Delete);
+
+app.MapPut("/api/positions/{id:int}", PositionsService.Update);
 
 
 app.UseHttpsRedirection();
