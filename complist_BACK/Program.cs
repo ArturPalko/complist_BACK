@@ -4,6 +4,7 @@ using complist_BACK.Entities;
 using complist_BACK.RequestHandlers;
 using complist_BACK.RequestHandlers.MailService;
 using complist_BACK.RequestHandlers.PositionService;
+using complist_BACK.RequestHandlers.UserTypeService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -265,7 +266,11 @@ app.MapPost("/api/positions/delete", PositionsService.Delete);
 
 app.MapPut("/api/positions/{id:int}", PositionsService.Update);
 
+app.MapPost("/api/userTypes", UserTypesService.Create);
 
+app.MapPost("/api/userTypes/delete", UserTypesService.Delete);
+
+app.MapPut("/api/userTypes/{id:int}", UserTypesService.Update);
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
