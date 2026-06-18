@@ -60,7 +60,7 @@ app.UseAuthentication(); // Обов’язково перед UseAuthorization 
 app.UseAuthorization();
 
 
-app.MapGet("/dictionaries", async (ApplicationContext db) =>
+/*app.MapGet("/dictionaries", async (ApplicationContext db) =>
 {
     var positions = await db.Positions
         .OrderBy(p => p.Priority)
@@ -88,7 +88,58 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
         userTypes
     });
 });
+*/
+app.MapGet("/dictionaries", async (ApplicationContext db) =>
+{
+    var positions = await db.Positions
+        .OrderBy(p => p.Priority)
+        .Select(p => new
+        {
+            id = p.Id,
+            positionName = p.Name,
+            priority = p.Priority
+        })
+        .ToListAsync();
 
+    var userTypes = await db.UserTypes
+        .OrderBy(t => t.Priority)
+        .Select(t => new
+        {
+            id = t.Id,
+            userType = t.Name,
+            priority = t.Priority
+        })
+        .ToListAsync();
+
+    var departments = await db.Departments
+        .Include(d => d.Sections)
+        .OrderBy(d => d.PhonesPagePriority)
+        .Select(d => new
+        {
+            id = d.Id,
+            name = d.Name,
+            priority = d.PhonesPagePriority,
+
+            sections = d.Sections
+                .OrderBy(s => s.PhonesPagePriority)
+                .Select(s => new
+                {
+                    sectionId = s.Id,
+                    sectionName = s.Name,
+                    sectionPriority = s.PhonesPagePriority,
+                    departmentId = s.Department.Id
+                })
+                .ToList()
+        })
+        .ToListAsync();
+
+    return Results.Ok(new
+    {
+        positions,
+        userTypes,
+        departments
+    });
+});
 
 app.Map("/mails/{mailType}", async (string mailType, ApplicationContext db) =>
 {
