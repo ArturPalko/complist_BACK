@@ -116,8 +116,8 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
         .OrderBy(d => d.PhonesPagePriority)
         .Select(d => new
         {
-            id = d.Id,
-            name = d.Name,
+            departmentId = d.Id,
+            departmentName = d.Name,
             priority = d.PhonesPagePriority,
 
             sections = d.Sections
