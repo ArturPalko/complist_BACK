@@ -23,8 +23,19 @@
         public ApplicationContext(DbContextOptions<ApplicationContext> options) 
         :base(options)
         {
+
             
         }
-   
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Department>()
+                .HasMany(d => d.Sections)
+                .WithOne(s => s.Department)
+                .HasForeignKey(s => s.DepartmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
+
     }
 }

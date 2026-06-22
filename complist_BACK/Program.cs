@@ -5,6 +5,7 @@ using complist_BACK.RequestHandlers;
 using complist_BACK.RequestHandlers.MailService;
 using complist_BACK.RequestHandlers.PositionService;
 using complist_BACK.RequestHandlers.UserTypeService;
+using complist_BACK.RequestHandlers.DepartmentService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ using Microsoft.EntityFrameworkCore.SqlServer;
 using Microsoft.VisualBasic;
 using System;
 using System.Text.Json;
+using complist_BACK.RequestHandlers.SectionService;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -310,7 +312,16 @@ app.MapPost("/changeOrder/{pageName}", async (
     return Results.Ok();
 });
 
+app.MapPost("/api/sections", SectionsService.Create);
+app.MapPost("/api/sections/delete", SectionsService.Delete);
+app.MapPut("/api/sections/{id:int}", SectionsService.Update);
 
+
+app.MapPost("/api/departments", DepartmentsService.Create);
+
+app.MapPost("/api/departments/delete", DepartmentsService.Delete);
+
+app.MapPut("/api/departments/{id:int}", DepartmentsService.Update);
 app.MapPost("/api/positions", PositionsService.Create);
 
 app.MapPost("/api/positions/delete", PositionsService.Delete);
