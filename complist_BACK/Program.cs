@@ -200,7 +200,7 @@ app.MapPost("/changeOrder/{pageName}", async (
         // =========================
         // SECTIONS
         // =========================
-        if (mode == "sections")
+        if (mode == "section")
         {
             int depId = data.GetProperty("depId").GetInt32();
 
@@ -225,7 +225,7 @@ app.MapPost("/changeOrder/{pageName}", async (
         // =========================
         // DEPARTMENTS
         // =========================
-        if (mode == "departments")
+        if (mode == "department")
         {
             var map = (await db.Departments.ToListAsync())
                 .ToDictionary(x => x.Id);
@@ -246,7 +246,7 @@ app.MapPost("/changeOrder/{pageName}", async (
         // =========================
         // POSITIONS
         // =========================
-        if (mode == "positions")
+        if (mode == "position")
         {
             var map = (await db.Positions.ToListAsync())
                 .ToDictionary(x => x.Id);
@@ -267,7 +267,7 @@ app.MapPost("/changeOrder/{pageName}", async (
         // =========================
         // USER TYPES
         // =========================
-        if (mode == "userTypes")
+        if (mode == "userType")
         {
             var map = (await db.UserTypes.ToListAsync())
                 .ToDictionary(x => x.Id);
