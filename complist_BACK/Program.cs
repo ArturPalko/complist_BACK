@@ -93,6 +93,25 @@ app.UseAuthorization();
 */
 app.MapGet("/dictionaries", async (ApplicationContext db) =>
 {
+    var phonesResult = await db.PhoneTypes
+        .Select(pt => new
+        {
+            id = pt.Id,
+            name = pt.Name,
+            phones = pt.Phones.Select(p => new
+            {
+                id = p.Id,
+                number = p.Number,
+                users = p.Users.Select(u => new
+                {
+                    id = u.Id,
+                    name = u.Name
+                }).ToList()
+            }).ToList()
+        })
+        .ToListAsync();
+
+
     var positions = await db.Positions
         .OrderBy(p => p.Priority)
         .Select(p => new
@@ -137,6 +156,7 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
 
     return Results.Ok(new
     {
+        phonesResult,
         positions,
         userTypes,
         departments
