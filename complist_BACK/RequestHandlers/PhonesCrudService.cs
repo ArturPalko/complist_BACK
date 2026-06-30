@@ -33,26 +33,29 @@ namespace complist_BACK.RequestHandlers.PhonesCrudService
      int id,
      JsonElement data)
         {
-            var all = await db.Phones.ToListAsync();
-            var entity = await db.Phones.FindAsync(id);
+            var entity = await db.Phones.FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
                 return Results.Ok();
 
-            if (data.TryGetProperty("number", out var numberProp))
+            db.Phones.Update(entity); 
+
+            if (data.TryGetProperty("name", out var numberProp))
                 entity.Number = numberProp.GetString();
 
             if (data.TryGetProperty("phoneTypeId", out var typeProp))
                 entity.PhoneTypeId = typeProp.GetInt32();
 
-            await db.SaveChangesAsync();
+            var result = await db.SaveChangesAsync();
+
+            Console.WriteLine($"Saved rows: {result}");
 
             return Results.Ok(entity);
         }
-        // =========================
-        // DELETE (bulk)
-        // =========================
-        public static async Task<IResult> Delete(
+            // =========================
+            // DELETE (bulk)
+            // =========================
+            public static async Task<IResult> Delete(
      ApplicationContext db,
      JsonElement data)
         {
