@@ -6,6 +6,7 @@ using complist_BACK.RequestHandlers.MailService;
 using complist_BACK.RequestHandlers.PositionService;
 using complist_BACK.RequestHandlers.UserTypeService;
 using complist_BACK.RequestHandlers.DepartmentService;
+using complist_BACK.RequestHandlers.PhonesCrudService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,7 @@ using Microsoft.VisualBasic;
 using System;
 using System.Text.Json;
 using complist_BACK.RequestHandlers.SectionService;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -353,6 +355,13 @@ app.MapPost("/api/userTypes", UserTypesService.Create);
 app.MapPost("/api/userTypes/delete", UserTypesService.Delete);
 
 app.MapPut("/api/userTypes/{id:int}", UserTypesService.Update);
+
+
+app.MapPost("/api/phones", PhonesCrudService.Create);
+
+app.MapPost("/api/phones/delete", PhonesCrudService.Delete);
+
+app.MapPut("/api/phones/{id:int}", PhonesCrudService.Update);
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
