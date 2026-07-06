@@ -113,7 +113,6 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
         })
         .ToListAsync();
 
-
     var positions = await db.Positions
         .OrderBy(p => p.Priority)
         .Select(p => new
@@ -135,13 +134,24 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
         .ToListAsync();
 
     var departments = await db.Departments
-        .Include(d => d.Sections)
         .OrderBy(d => d.PhonesPagePriority)
         .Select(d => new
         {
             departmentId = d.Id,
             departmentName = d.Name,
             priority = d.PhonesPagePriority,
+
+            // Користувачі департаменту (без секції)
+            users = d.Users
+                .Where(u => u.SectionId == null)
+                .Select(u => new
+                {
+                    id = u.Id,
+                    name = u.Name,
+                    positionId = u.PositionId,
+                    userTypeId = u.UserTypeId
+                })
+                .ToList(),
 
             sections = d.Sections
                 .OrderBy(s => s.PhonesPagePriority)
@@ -150,7 +160,17 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
                     sectionId = s.Id,
                     sectionName = s.Name,
                     sectionPriority = s.PhonesPagePriority,
-                    departmentId = s.Department.Id
+                    departmentId = s.DepartmentId,
+
+                    users = s.Users
+                        .Select(u => new
+                        {
+                            id = u.Id,
+                            name = u.Name,
+                            positionId = u.PositionId,
+                            userTypeId = u.UserTypeId
+                        })
+                        .ToList()
                 })
                 .ToList()
         })
