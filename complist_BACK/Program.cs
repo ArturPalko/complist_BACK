@@ -149,7 +149,9 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
                     id = u.Id,
                     name = u.Name,
                     positionId = u.PositionId,
-                    userTypeId = u.UserTypeId
+                    userTypeId = u.UserTypeId,
+                    positionName = u.Position != null ? u.Position.Name : null,
+                    userType = u.UserType.Name
                 })
                 .ToList(),
 
