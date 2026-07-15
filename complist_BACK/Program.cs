@@ -1,5 +1,4 @@
-﻿
-using complist_BACK;
+﻿using complist_BACK;
 using complist_BACK.Entities;
 using complist_BACK.RequestHandlers;
 using complist_BACK.RequestHandlers.MailService;
@@ -7,6 +6,7 @@ using complist_BACK.RequestHandlers.PositionService;
 using complist_BACK.RequestHandlers.UserTypeService;
 using complist_BACK.RequestHandlers.DepartmentService;
 using complist_BACK.RequestHandlers.PhonesCrudService;
+using complist_BACK.RequestHandlers.UsersService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -387,6 +387,13 @@ app.MapPost("/api/phones/delete", PhonesCrudService.Delete);
 
 app.MapPut("/api/phones/{id:int}", PhonesCrudService.Update);
 app.UseHttpsRedirection();
+
+
+
+app.MapPost("/api/addUser", UsersService.Create);
+app.MapPut("/api/editUser/{id}", UsersService.Update);
+app.MapPost("/api/deleteUsers", UsersService.Delete);
+
 
 app.UseAuthorization();
 
