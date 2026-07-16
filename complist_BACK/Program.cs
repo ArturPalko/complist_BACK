@@ -164,7 +164,7 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
                     sectionPriority = s.PhonesPagePriority,
                     departmentId = s.DepartmentId,
 
-                    users = s.Users
+                    users = s.Users.Where(u => u.UserTypeId==1)
                         .Select(u => new
                         {
                             id = u.Id,
@@ -179,13 +179,30 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
                 .ToList()
         })
         .ToListAsync();
+    var users = await db.Users.Where(u=> u.UserTypeId ==1 && !string.IsNullOrEmpty(u.Name))
+    .Select(u => new
+    {
+        id = u.Id,
+        name = u.Name,
+    })
+    .ToListAsync();
+    var sections = await db.Sections
+     .OrderBy(s => s.PhonesPagePriority)
+     .Select(s => new
+     {
+         id = s.Id,
+         name = s.Name,
+     })
+     .ToListAsync(); ;
 
     return Results.Ok(new
     {
-        phonesResult,
-        positions,
-        userTypes,
-        departments
+         phonesResult,
+         positions,
+         userTypes,
+         departments,
+         users,
+        sections
     });
 });
 
