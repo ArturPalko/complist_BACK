@@ -193,7 +193,16 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
          id = s.Id,
          name = s.Name,
      })
-     .ToListAsync(); ;
+     .ToListAsync();
+
+    var deps = await db.Departments
+ .OrderBy(s => s.PhonesPagePriority)
+ .Select(s => new
+ {
+     id = s.Id,
+     name = s.Name,
+ })
+ .ToListAsync();
 
     return Results.Ok(new
     {
@@ -202,7 +211,8 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
          userTypes,
          departments,
          users,
-        sections
+        sections,
+        deps
     });
 });
 
@@ -410,6 +420,11 @@ app.UseHttpsRedirection();
 app.MapPost("/api/addUser", UsersService.Create);
 app.MapPut("/api/editUser/{id}", UsersService.Update);
 app.MapPost("/api/deleteUsers", UsersService.Delete);
+
+
+app.MapPost("/mails/{mailType}/addMail",
+    (string mailType, ApplicationContext db, HttpRequest request) =>
+        MailsService.AddMail(mailType, db, request));
 
 
 app.UseAuthorization();
