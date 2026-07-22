@@ -100,5 +100,39 @@
 
             return Results.Json(newMail);
         }
+
+        public static async Task<IResult> DeleteMail(
+     ApplicationContext db,
+     HttpRequest request)
+        {
+            var ids = await request.ReadFromJsonAsync<List<int>>();
+
+            if (ids == null || !ids.Any())
+                return Results.BadRequest("No ids provided");
+
+            var mailsToDelete = await db.Mails
+                .Where(x => ids.Contains(x.Id))
+                .ToListAsync();
+
+            if (!mailsToDelete.Any())
+                return Results.NotFound();
+
+            db.Mails.RemoveRange(mailsToDelete);
+
+            await db.SaveChangesAsync();
+
+            var remainingMails = await db.Mails
+                .OrderBy(x => x.Priority)
+                .ToListAsync();
+
+            for (int i = 0; i < remainingMails.Count; i++)
+            {
+                remainingMails[i].Priority = i + 1;
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok();
+        }
     }
 }

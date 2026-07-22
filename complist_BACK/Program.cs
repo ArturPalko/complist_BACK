@@ -427,6 +427,7 @@ app.MapPost("/mails/{mailType}/addMail",
         MailsService.AddMail(mailType, db, request));
 
 
+app.MapPost("/mails/deleteMails", MailsService.DeleteMail);
 app.UseAuthorization();
 
 app.MapControllers();

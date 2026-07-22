@@ -94,7 +94,11 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                     ?? m.User?.Department?.Name
                     ?? m.User?.Section?.Name
                     ?? "",
-
+                OwnerId =
+    m.UserId
+    ?? m.DepartmentId
+    ?? m.SectionId
+    ?? 0,
                 OwnerType =
                     m.User != null ? "User"
                     : m.Department != null ? "Department"
