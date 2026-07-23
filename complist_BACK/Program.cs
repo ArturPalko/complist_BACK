@@ -226,11 +226,11 @@ app.Map("/phones/", async (ApplicationContext db) =>
     return await PhonesService.GetPhones(db);
 });
 
-app.Map("/mails/{mailType}/passwords", async (string mailType, ApplicationContext db) =>
-{
-    return await MailsService.GetMailsPasswords(mailType, db);
-})
-.RequireAuthorization("AdminOnly"); // ?? тільки для admin
+app.MapGet(
+    "/mails/{mailType}/passwords/{id?}",
+    MailsService.GetMailsPasswords
+)
+.RequireAuthorization("AdminOnly");
 
 
 app.MapGet("/checkAuth", (HttpContext context) =>
@@ -428,6 +428,8 @@ app.MapPost("/mails/{mailType}/addMail",
 
 
 app.MapPost("/mails/deleteMails", MailsService.DeleteMail);
+
+app.MapPut("/mails/editMail/{id}", MailsService.EditMail);
 app.UseAuthorization();
 
 app.MapControllers();

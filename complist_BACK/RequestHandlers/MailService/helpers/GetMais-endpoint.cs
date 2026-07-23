@@ -47,13 +47,20 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                     m.ResponsibleUsers
                         .Select(x => x.User.Name)
                         .FirstOrDefault() ?? "",
-
+                ResponsibleUserIds =
+    m.ResponsibleUsers
+        .Select(x => x.UserId)
+        .ToList(),
                 OwnerType =
                     m.User != null ? "User"
                     : m.Department != null ? "Department"
                     : m.Section != null ? "Section"
                     : "",
-
+                OwnerId =
+    m.UserId
+    ?? m.DepartmentId
+    ?? m.SectionId
+    ?? 0,
                 PasswordKnown = !string.IsNullOrEmpty(m.Password),
 
                 DepSec = new

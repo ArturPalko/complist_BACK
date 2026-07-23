@@ -25,25 +25,48 @@
             return Results.Json(mails);
         }
 
-        public static async Task<IResult> GetMailsPasswords(string mailType, ApplicationContext db)
+        public static async Task<IResult> GetMailsPasswords(
+           string mailType,
+           ApplicationContext db,
+           int? id)
         {
-            var passwordsData = await db.Mails
-                                        .Include(m => m.MailType)
-                                        .ToListAsync();
+            var query = db.Mails
+                .Include(m => m.MailType)
+                .Where(m => m.MailType.Name == mailType);
 
-            var passwords = passwordsData
-                                .Where(m => m.MailType.Name == mailType)
-                                .Select(m => new { id = m.Id, password = m.Password });
+            if (id.HasValue)
+            {
+                var password = await query
+                    .Where(m => m.Id == id.Value)
+                    .Select(m => new
+                    {
+                        id = m.Id,
+                        password = m.Password
+                    })
+                    .FirstOrDefaultAsync();
+
+                return Results.Json(password);
+            }
+
+            var passwords = await query
+                .Select(m => new
+                {
+                    id = m.Id,
+                    password = m.Password
+                })
+                .ToListAsync();
 
             return Results.Json(passwords);
         }
 
         public static async Task<IResult> AddMail(
-       string mailType,
-       ApplicationContext db,
-       HttpRequest request)
+      string mailType,
+      ApplicationContext db,
+      HttpRequest request)
         {
-            var data = await request.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
+            var data =
+                await request.ReadFromJsonAsync<
+                    Dictionary<string, JsonElement>>();
 
             if (data == null)
                 return Results.BadRequest("No data");
@@ -56,24 +79,37 @@
             };
 
             if (typeId == 0)
-                return Results.BadRequest("Unknown mail type");
+                return Results.BadRequest(
+                    "Unknown mail type");
 
-            var ownerType = data["ownerType"].GetString();
-            var ownerId = data["ownerId"].GetInt32();
+            var ownerType =
+                data["ownerType"].GetString();
 
-            // Зсуваємо всі пріоритети вниз
-            var mails = await db.Mails.ToListAsync();
+            var ownerId =
+                data["ownerId"].GetInt32();
 
-            foreach (var mail in mails)
+            var mails =
+                await db.Mails.ToListAsync();
+
+            foreach (var m in mails)
             {
-                mail.Priority++;
+                m.Priority++;
             }
 
             var newMail = new Mail
             {
                 Name = data["mail"].GetString(),
                 MailTypeId = typeId,
-                Priority = 1
+                Priority = 1,
+
+               
+
+                Password =
+                    data.TryGetValue(
+                        "password",
+                        out var password)
+                    ? password.GetString()
+                    : null
             };
 
             switch (ownerType)
@@ -91,14 +127,41 @@
                     break;
 
                 default:
-                    return Results.BadRequest("Unknown owner type");
+                    return Results.BadRequest(
+                        "Unknown owner type");
             }
 
             db.Mails.Add(newMail);
 
             await db.SaveChangesAsync();
 
-            return Results.Json(newMail);
+            if (
+                mailType == "Gov-ua"
+                &&
+                data.TryGetValue(
+                    "responsibleUserIds",
+                    out var responsibleUsers)
+            )
+            {
+                var ids =
+                    responsibleUsers
+                        .EnumerateArray()
+                        .Select(x => x.GetInt32());
+
+                foreach (var userId in ids)
+                {
+                    db.ResponsibleUsers.Add(
+                        new ResponsibleUser
+                        {
+                            MailId = newMail.Id,
+                            UserId = userId
+                        });
+                }
+
+                await db.SaveChangesAsync();
+            }
+
+           return Results.Ok(); 
         }
 
         public static async Task<IResult> DeleteMail(
@@ -133,6 +196,115 @@
             await db.SaveChangesAsync();
 
             return Results.Ok();
+        }
+        public static async Task<IResult> EditMail(
+    string mailType,
+    ApplicationContext db,
+    int id,
+    HttpRequest request)
+        {
+            var data =
+                await request.ReadFromJsonAsync<
+                    Dictionary<string, JsonElement>>();
+
+            if (data == null)
+                return Results.BadRequest("No data");
+
+            var mail =
+                await db.Mails
+                    .FirstOrDefaultAsync(
+                        x => x.Id == id);
+
+            if (mail == null)
+                return Results.NotFound();
+
+            var newName =
+                data["mail"].GetString();
+
+            if (!string.Equals(
+                mail.Name,
+                newName,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                mail.PreviousName = mail.Name;
+                mail.Name = newName;
+            }
+
+            mail.DepartmentId = null;
+            mail.SectionId = null;
+            mail.UserId = null;
+
+            var ownerType =
+                data["ownerType"].GetString();
+
+            var ownerId =
+                data["ownerId"].GetInt32();
+
+            switch (ownerType)
+            {
+                case "department":
+                    mail.DepartmentId = ownerId;
+                    break;
+
+                case "section":
+                    mail.SectionId = ownerId;
+                    break;
+
+                case "user":
+                    mail.UserId = ownerId;
+                    break;
+
+                default:
+                    return Results.BadRequest(
+                        "Unknown owner type");
+            }
+
+            
+
+            if (
+                data.TryGetValue(
+                    "password",
+                    out var password))
+            {
+                mail.Password =
+                    password.GetString();
+            }
+
+            if (mailType == "Gov-ua")
+            {
+                var existing =
+                    await db.ResponsibleUsers
+                        .Where(x => x.MailId == mail.Id)
+                        .ToListAsync();
+
+                db.ResponsibleUsers
+                    .RemoveRange(existing);
+
+                if (
+                    data.TryGetValue(
+                        "responsibleUserIds",
+                        out var responsibleUsers))
+                {
+                    var ids =
+                        responsibleUsers
+                            .EnumerateArray()
+                            .Select(x => x.GetInt32());
+
+                    foreach (var userId in ids)
+                    {
+                        db.ResponsibleUsers.Add(
+                            new ResponsibleUser
+                            {
+                                MailId = mail.Id,
+                                UserId = userId
+                            });
+                    }
+                }
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Json(mail);
         }
     }
 }
