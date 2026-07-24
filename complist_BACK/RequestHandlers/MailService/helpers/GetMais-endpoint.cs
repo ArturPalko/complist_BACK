@@ -42,25 +42,52 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                 m.Priority,
 
                 userName = m.User != null ? m.User.Name : "",
-
-                ResponsibleUser =
-                    m.ResponsibleUsers
-                        .Select(x => x.User.Name)
-                        .FirstOrDefault() ?? "",
-                ResponsibleUserIds =
-    m.ResponsibleUsers
-        .Select(x => x.UserId)
-        .ToList(),
-                OwnerType =
-                    m.User != null ? "User"
-                    : m.Department != null ? "Department"
-                    : m.Section != null ? "Section"
-                    : "",
+                /* ResponsibleUsers =
+     (
+         m.User != null
+             ? new[]
+             {
+                 new
+                 {
+                     id = m.User.Id,
+                     name = m.User.Name
+                 }
+             }
+             : m.ResponsibleUsers
+                 .Select(x => new
+                 {
+                     id = x.UserId,
+                     name = x.User.Name
+                 })
+     ).ToList(),
+                 ResponsibleUser =
+                     m.ResponsibleUsers
+                         .Select(x => x.User.Name)
+                         .FirstOrDefault() ?? "",
+                 ResponsibleUserIds =
+     m.ResponsibleUsers
+         .Select(x => x.UserId)
+         .ToList(),*/
+                 OwnerType =
+                     m.User != null ? "User"
+                     : m.Department != null ? "Department"
+                     : m.Section != null ? "Section"
+                     : "",
+                ResponsibleUsers =
+    m.User == null
+        ? m.ResponsibleUsers
+            .Select(x => new
+            {
+                id = x.UserId,
+                name = x.User.Name
+            })
+        : Enumerable.Empty<object>(),
                 OwnerId =
     m.UserId
     ?? m.DepartmentId
     ?? m.SectionId
     ?? 0,
+
                 PasswordKnown = !string.IsNullOrEmpty(m.Password),
 
                 DepSec = new

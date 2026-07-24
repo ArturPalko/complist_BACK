@@ -304,7 +304,7 @@
 
             await db.SaveChangesAsync();
 
-            return Results.Json(mail);
+            return Results.Ok();
         }
     }
 }

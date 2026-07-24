@@ -429,7 +429,10 @@ app.MapPost("/mails/{mailType}/addMail",
 
 app.MapPost("/mails/deleteMails", MailsService.DeleteMail);
 
-app.MapPut("/mails/editMail/{id}", MailsService.EditMail);
+app.MapPut(
+    "/mails/{mailType}/editMail/{id}",
+    MailsService.EditMail
+);
 app.UseAuthorization();
 
 app.MapControllers();
