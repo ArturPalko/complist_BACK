@@ -99,19 +99,24 @@
             var newMail = new Mail
             {
                 Name = data["mail"].GetString(),
+                PreviousName =
+         mailType == "Lotus"
+         && data.TryGetValue(
+             "previousName",
+             out var previousName)
+             ? previousName.GetString()
+             : null,
+
                 MailTypeId = typeId,
                 Priority = 1,
 
-               
-
                 Password =
-                    data.TryGetValue(
-                        "password",
-                        out var password)
-                    ? password.GetString()
-                    : null
+         data.TryGetValue(
+             "password",
+             out var password)
+         ? password.GetString()
+         : null
             };
-
             switch (ownerType)
             {
                 case "department":
@@ -221,12 +226,47 @@
             var newName =
                 data["mail"].GetString();
 
-            if (!string.Equals(
-                mail.Name,
-                newName,
-                StringComparison.OrdinalIgnoreCase))
+            var newPreviousName =
+                data.TryGetValue(
+                    "previousName",
+                    out var previousName)
+                    ? previousName.GetString()
+                    : null;
+
+            var autoUpdatePreviousName =
+                data.TryGetValue(
+                    "autoUpdatePreviousName",
+                    out var autoUpdate)
+                    && autoUpdate.GetBoolean();
+
+            if (mailType == "Lotus")
             {
-                mail.PreviousName = mail.Name;
+                bool nameChanged =
+                    !string.Equals(
+                        mail.Name,
+                        newName,
+                        StringComparison.OrdinalIgnoreCase);
+
+                if (nameChanged)
+                {
+                    if (autoUpdatePreviousName)
+                    {
+                        mail.PreviousName = mail.Name;
+                    }
+                    else
+                    {
+                        mail.PreviousName = newPreviousName;
+                    }
+
+                    mail.Name = newName;
+                }
+                else
+                {
+                    mail.PreviousName = newPreviousName;
+                }
+            }
+            else
+            {
                 mail.Name = newName;
             }
 
@@ -258,8 +298,6 @@
                     return Results.BadRequest(
                         "Unknown owner type");
             }
-
-            
 
             if (
                 data.TryGetValue(
