@@ -1,5 +1,6 @@
 ﻿using complist_BACK.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace complist_BACK.RequestHandlers
 {
@@ -152,6 +153,90 @@ namespace complist_BACK.RequestHandlers
 
             return Results.Json(groupedByDepartment);
         }
+
+
+        public static async Task<IResult> Create(ApplicationContext db, HttpRequest request)
+        {
+            var data = await request.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
+
+            var name = data?["name"].GetString();
+          var type = data["type"].GetInt32();
+
+            var assignedUserIds = data?["assignedUsers"]
+                .EnumerateArray()
+                .Select(x => x.GetInt32())
+                .ToList();
+
+            var users = await db.Users
+                .Where(u => assignedUserIds.Contains(u.Id))
+                .ToListAsync();
+
+            var phone = new Phone
+            {
+                Number = name,
+                PhoneTypeId = type,
+                Users = users
+            };
+
+            db.Phones.Add(phone);
+            await db.SaveChangesAsync();
+
+            return Results.Ok();
+        }
+
+        public static async Task<IResult> Delete(ApplicationContext db, HttpRequest request)
+        {
+            var ids = await request.ReadFromJsonAsync<List<int>>();
+
+            if (ids == null || ids.Count == 0)
+                return Results.BadRequest();
+
+            var phones = await db.Phones
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
+
+            db.Phones.RemoveRange(phones);
+            await db.SaveChangesAsync();
+
+            return Results.Ok();
+        }
+
+        public static async Task<IResult> Edit(ApplicationContext db, HttpRequest request)
+        {
+            var data = await request.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
+
+            var id = data["id"].GetInt32();
+            var number = data["name"].GetString();
+            var phoneTypeId = data["type"].GetInt32();
+
+            var assignedUserIds = data["assignedUsers"]
+                .EnumerateArray()
+                .Select(x => x.GetInt32())
+                .ToList();
+
+            var phone = await db.Phones
+                .Include(p => p.Users)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (phone == null)
+                return Results.NotFound();
+
+            var users = await db.Users
+                .Where(u => assignedUserIds.Contains(u.Id))
+                .ToListAsync();
+
+            phone.Number = number;
+            phone.PhoneTypeId = phoneTypeId;
+
+            // Замінити всіх користувачів новим списком
+            phone.Users = users;
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(phone);
+        }
     }
+
+
 }
 

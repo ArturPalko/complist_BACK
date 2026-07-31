@@ -433,6 +433,11 @@ app.MapPut(
     "/mails/{mailType}/editMail/{id}",
     MailsService.EditMail
 );
+
+app.MapPost("/api/addPhone", PhonesService.Create);
+app.MapPut("/api/editPhone/{id}", PhonesService.Edit);
+app.MapPost("/api/deletePhones", PhonesService.Delete);
+
 app.UseAuthorization();
 
 app.MapControllers();
