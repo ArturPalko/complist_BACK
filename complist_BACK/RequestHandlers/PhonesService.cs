@@ -160,7 +160,7 @@ namespace complist_BACK.RequestHandlers
             var data = await request.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
 
             var name = data?["name"].GetString();
-          var type = data["type"].GetInt32();
+            var type = data["type"].GetInt32();
 
             var assignedUserIds = data?["assignedUsers"]
                 .EnumerateArray()
@@ -168,8 +168,25 @@ namespace complist_BACK.RequestHandlers
                 .ToList();
 
             var users = await db.Users
-                .Where(u => assignedUserIds.Contains(u.Id))
-                .ToListAsync();
+    .Where(u => assignedUserIds.Contains(u.Id))
+    .ToListAsync();
+
+            foreach (var user in users)
+            {
+                var oldPhones = await db.Phones
+                    .Include(p => p.Users)
+                    .Where(p =>
+                        p.PhoneTypeId == type &&
+                        p.Users.Any(u => u.Id == user.Id))
+                    .ToListAsync();
+
+                foreach (var oldPhone in oldPhones)
+                {
+                    oldPhone.Users.Remove(user);
+
+                   
+                }
+            }
 
             var phone = new Phone
             {
@@ -184,28 +201,11 @@ namespace complist_BACK.RequestHandlers
             return Results.Ok();
         }
 
-        public static async Task<IResult> Delete(ApplicationContext db, HttpRequest request)
-        {
-            var ids = await request.ReadFromJsonAsync<List<int>>();
 
-            if (ids == null || ids.Count == 0)
-                return Results.BadRequest();
-
-            var phones = await db.Phones
-                .Where(p => ids.Contains(p.Id))
-                .ToListAsync();
-
-            db.Phones.RemoveRange(phones);
-            await db.SaveChangesAsync();
-
-            return Results.Ok();
-        }
-
-        public static async Task<IResult> Edit(ApplicationContext db, HttpRequest request)
+        public static async Task<IResult> Edit(ApplicationContext db, int id, HttpRequest request)
         {
             var data = await request.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
 
-            var id = data["id"].GetInt32();
             var number = data["name"].GetString();
             var phoneTypeId = data["type"].GetInt32();
 
@@ -225,15 +225,52 @@ namespace complist_BACK.RequestHandlers
                 .Where(u => assignedUserIds.Contains(u.Id))
                 .ToListAsync();
 
+            // Якщо вибраний користувач уже має інший телефон цього типу,
+            // прибираємо цей зв'язок.
+            foreach (var user in users)
+            {
+                var oldPhones = await db.Phones
+                    .Include(p => p.Users)
+                    .Where(p =>
+                        p.Id != phone.Id &&
+                        p.PhoneTypeId == phoneTypeId &&
+                        p.Users.Any(u => u.Id == user.Id))
+                    .ToListAsync();
+
+                foreach (var oldPhone in oldPhones)
+                {
+                    oldPhone.Users.Remove(user);
+                }
+            }
+
+            // Оновлюємо дані телефону
             phone.Number = number;
             phone.PhoneTypeId = phoneTypeId;
 
-            // Замінити всіх користувачів новим списком
-            phone.Users = users;
+            // Повністю оновлюємо список користувачів телефону
+            phone.Users.Clear();
+
+            foreach (var user in users)
+            {
+                phone.Users.Add(user);
+            }
 
             await db.SaveChangesAsync();
 
-            return Results.Ok(phone);
+            return Results.Ok();
+        }
+
+        public static async Task<IResult> Delete(ApplicationContext db, List<int> ids)
+        {
+            var items = await db.Phones
+                .Where(x => ids.Contains(x.Id))
+                .ToListAsync();
+
+            db.Phones.RemoveRange(items);
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok();
         }
     }
 
