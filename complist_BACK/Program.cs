@@ -5,7 +5,6 @@ using complist_BACK.RequestHandlers.MailService;
 using complist_BACK.RequestHandlers.PositionService;
 using complist_BACK.RequestHandlers.UserTypeService;
 using complist_BACK.RequestHandlers.DepartmentService;
-using complist_BACK.RequestHandlers.PhonesCrudService;
 using complist_BACK.RequestHandlers.UsersService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -247,9 +246,9 @@ app.MapPost("/login",  (
     return  LoginService.Login(request, db, httpContext);
 });
 
-app.MapPost("/logout",  (HttpContext context) =>
+app.MapPost("/logout", (HttpContext context) =>
 {
-    return  LoginService.LogOut(context);
+    return LoginService.LogOut(context);
 });
 
 
@@ -408,12 +407,6 @@ app.MapPost("/api/userTypes/delete", UserTypesService.Delete);
 app.MapPut("/api/userTypes/{id:int}", UserTypesService.Update);
 
 
-app.MapPost("/api/phones", PhonesCrudService.Create);
-
-app.MapPost("/api/phones/delete", PhonesCrudService.Delete);
-
-app.MapPut("/api/phones/{id:int}", PhonesCrudService.Update);
-app.UseHttpsRedirection();
 
 
 
