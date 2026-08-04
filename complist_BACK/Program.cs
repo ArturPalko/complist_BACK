@@ -106,7 +106,10 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
                 users = p.Users.Select(u => new
                 {
                     id = u.Id,
-                    name = u.Name
+                    name = !string.IsNullOrWhiteSpace(u.Name)
+            ? u.Name
+            : $"{u.Position.Name} {u.Department.Name}" +
+              (u.Section != null ? $" / {u.Section.Name}" : "")
                 }).ToList()
             }).ToList()
         })
@@ -163,7 +166,7 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
                     sectionPriority = s.PhonesPagePriority,
                     departmentId = s.DepartmentId,
 
-                    users = s.Users.Where(u => u.UserTypeId==1)
+                    users = s.Users
                         .Select(u => new
                         {
                             id = u.Id,
@@ -178,11 +181,23 @@ app.MapGet("/dictionaries", async (ApplicationContext db) =>
                 .ToList()
         })
         .ToListAsync();
-    var users = await db.Users.Where(u=> u.UserTypeId ==1 && !string.IsNullOrEmpty(u.Name))
+    //var users = await db.Users.Where(u=> u.UserTypeId ==1 && !string.IsNullOrEmpty(u.Name))
+    /*  var users = await db.Users
+      .Select(u => new
+      {
+          id = u.Id,
+          name = u.Name,
+      })
+      .ToListAsync();*/
+
+    var users = await db.Users
     .Select(u => new
     {
         id = u.Id,
-        name = u.Name,
+        name = !string.IsNullOrWhiteSpace(u.Name)
+            ? u.Name
+            : $"{u.Position.Name} {u.Department.Name}" +
+              (u.Section != null ? $" / {u.Section.Name}" : "")
     })
     .ToListAsync();
     var sections = await db.Sections
@@ -410,26 +425,17 @@ app.MapPut("/api/userTypes/{id:int}", UserTypesService.Update);
 
 
 
-app.MapPost("/api/addUser", UsersService.Create);
-app.MapPut("/api/editUser/{id}", UsersService.Update);
-app.MapPost("/api/deleteUsers", UsersService.Delete);
+app.MapPost("/api/users", UsersService.Create);
+app.MapPut("/api/users/{id:int}", UsersService.Update);
+app.MapPost("/api/users/delete", UsersService.Delete);
 
+app.MapPost("/api/phones", PhonesService.Create);
+app.MapPut("/api/phones/{id:int}", PhonesService.Edit);
+app.MapPost("/api/phones/delete", PhonesService.Delete);
 
-app.MapPost("/mails/{mailType}/addMail",
-    (string mailType, ApplicationContext db, HttpRequest request) =>
-        MailsService.AddMail(mailType, db, request));
-
-
-app.MapPost("/mails/deleteMails", MailsService.DeleteMail);
-
-app.MapPut(
-    "/mails/{mailType}/editMail/{id}",
-    MailsService.EditMail
-);
-
-app.MapPost("/api/addPhone", PhonesService.Create);
-app.MapPut("/api/editPhone/{id}", PhonesService.Edit);
-app.MapPost("/api/deletePhones", PhonesService.Delete);
+app.MapPost("/api/mails/{mailType}", MailsService.AddMail);
+app.MapPut("/api/mails/{mailType}/{id:int}", MailsService.EditMail);
+app.MapPost("/api/mails/delete", MailsService.DeleteMail);
 
 app.UseAuthorization();
 
