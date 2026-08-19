@@ -1,122 +1,144 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-
-namespace complist_BACK.RequestHandlers.ChangeOrder
+﻿namespace complist_BACK.RequestHandlers.ChangeOrderService
 {
-    public static class ChangeOrder
+    using complist_BACK.Entities;
+    using Microsoft.EntityFrameworkCore;
+    using System.Text.Json;
+
+    public static class ChangeOrderService
     {
-        public static async Task<IResult> Handle(
+        public static async Task<IResult> ChangeOrder(
+            ApplicationContext db,
             string pageName,
-            JsonElement data,
-            ApplicationContext db)
+            JsonElement data)
         {
-            if (pageName == "phones")
+            if (pageName == "sections")
             {
-                var mode = data.TryGetProperty("mode", out var m)
-                    ? m.GetString()
-                    : null;
+                if (!data.TryGetProperty("depId", out var depIdProperty))
+                    return Results.BadRequest("depId is required for sections");
 
-                var items = data.GetProperty("items");
+                if (!data.TryGetProperty("items", out var items))
+                    return Results.BadRequest("items are required");
 
-                if (mode == "section")
+                var depId = depIdProperty.GetInt32();
+
+                var map = (await db.Sections
+                    .Where(s => s.DepartmentId == depId)
+                    .ToListAsync())
+                    .ToDictionary(x => x.Id);
+
+                foreach (var item in items.EnumerateArray())
                 {
-                    int depId = data.GetProperty("depId").GetInt32();
+                    var id = item.GetProperty("id").GetInt32();
+                    var priority = item.GetProperty("priority").GetInt32();
 
-                    var map = (await db.Sections
-                        .Where(x => x.DepartmentId == depId)
-                        .ToListAsync())
-                        .ToDictionary(x => x.Id);
-
-                    foreach (var item in items.EnumerateArray())
-                    {
-                        int id = item.GetProperty("id").GetInt32();
-                        int priority = item.GetProperty("priority").GetInt32();
-
-                        if (map.TryGetValue(id, out var section))
-                            section.PhonesPagePriority = priority;
-                    }
-
-                    await db.SaveChangesAsync();
-                    return Results.Ok();
+                    if (map.TryGetValue(id, out var section))
+                        section.PhonesPagePriority = priority;
                 }
 
-                if (mode == "department")
-                {
-                    var map = (await db.Departments.ToListAsync())
-                        .ToDictionary(x => x.Id);
+                await db.SaveChangesAsync();
 
-                    foreach (var item in items.EnumerateArray())
-                    {
-                        int id = item.GetProperty("id").GetInt32();
-                        int priority = item.GetProperty("priority").GetInt32();
-
-                        if (map.TryGetValue(id, out var d))
-                            d.PhonesPagePriority = priority;
-                    }
-
-                    await db.SaveChangesAsync();
-                    return Results.Ok();
-                }
-
-                if (mode == "position")
-                {
-                    var map = (await db.Positions.ToListAsync())
-                        .ToDictionary(x => x.Id);
-
-                    foreach (var item in items.EnumerateArray())
-                    {
-                        int id = item.GetProperty("id").GetInt32();
-                        int priority = item.GetProperty("priority").GetInt32();
-
-                        if (map.TryGetValue(id, out var p))
-                            p.Priority = priority;
-                    }
-
-                    await db.SaveChangesAsync();
-                    return Results.Ok();
-                }
-
-                if (mode == "userType")
-                {
-                    var map = (await db.UserTypes.ToListAsync())
-                        .ToDictionary(x => x.Id);
-
-                    foreach (var item in items.EnumerateArray())
-                    {
-                        int id = item.GetProperty("id").GetInt32();
-                        int priority = item.GetProperty("priority").GetInt32();
-
-                        if (map.TryGetValue(id, out var t))
-                            t.Priority = priority;
-                    }
-
-                    await db.SaveChangesAsync();
-                    return Results.Ok();
-                }
-
-                return Results.BadRequest("Invalid phones mode");
+                return Results.Ok();
             }
 
-            // =========================
-            // DEFAULT (MAILS)
-            // =========================
-
-            var mailMap = (await db.Mails.ToListAsync())
-                .ToDictionary(x => x.Id);
-
-            foreach (var item in data.EnumerateArray())
+            if (pageName == "departments")
             {
-                int id = item.GetProperty("id").GetInt32();
-                int priority = item.GetProperty("priority").GetInt32();
+                var items = data.ValueKind == JsonValueKind.Array
+                    ? data
+                    : data.GetProperty("items");
 
-                if (mailMap.TryGetValue(id, out var mail))
+                var map = (await db.Departments
+                    .ToListAsync())
+                    .ToDictionary(x => x.Id);
+
+                foreach (var item in items.EnumerateArray())
                 {
-                    mail.Priority = priority;
+                    var id = item.GetProperty("id").GetInt32();
+                    var priority = item.GetProperty("priority").GetInt32();
+
+                    if (map.TryGetValue(id, out var department))
+                        department.PhonesPagePriority = priority;
                 }
+
+                await db.SaveChangesAsync();
+
+                return Results.Ok();
             }
 
-            await db.SaveChangesAsync();
-            return Results.Ok();
+            if (pageName == "positions")
+            {
+                var items = data.ValueKind == JsonValueKind.Array
+                    ? data
+                    : data.GetProperty("items");
+
+                var map = (await db.Positions
+                    .ToListAsync())
+                    .ToDictionary(x => x.Id);
+
+                foreach (var item in items.EnumerateArray())
+                {
+                    var id = item.GetProperty("id").GetInt32();
+                    var priority = item.GetProperty("priority").GetInt32();
+
+                    if (map.TryGetValue(id, out var position))
+                        position.Priority = priority;
+                }
+
+                await db.SaveChangesAsync();
+
+                return Results.Ok();
+            }
+
+            if (pageName == "userType")
+            {
+                var items = data.ValueKind == JsonValueKind.Array
+                    ? data
+                    : data.GetProperty("items");
+
+                var map = (await db.UserTypes
+                    .ToListAsync())
+                    .ToDictionary(x => x.Id);
+
+                foreach (var item in items.EnumerateArray())
+                {
+                    var id = item.GetProperty("id").GetInt32();
+                    var priority = item.GetProperty("priority").GetInt32();
+
+                    if (map.TryGetValue(id, out var userType))
+                        userType.Priority = priority;
+                }
+
+                await db.SaveChangesAsync();
+
+                return Results.Ok();
+            }
+
+            if (pageName == "mails")
+            {
+                var items = data.ValueKind == JsonValueKind.Array
+                    ? data
+                    : data.GetProperty("items");
+
+                var map = (await db.Mails
+                    .ToListAsync())
+                    .ToDictionary(x => x.Id);
+
+                foreach (var item in items.EnumerateArray())
+                {
+                    var id = item.GetProperty("id").GetInt32();
+                    var priority = item.GetProperty("priority").GetInt32();
+
+                    if (map.TryGetValue(id, out var mail))
+                        mail.Priority = priority;
+                }
+
+                await db.SaveChangesAsync();
+
+                return Results.Ok();
+            }
+
+            return Results.BadRequest(
+                $"Invalid page name: {pageName}"
+            );
         }
     }
 }

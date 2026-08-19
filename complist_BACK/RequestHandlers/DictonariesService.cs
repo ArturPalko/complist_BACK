@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-namespace complist_BACK.RequestHandlers.DictionariesService
+﻿namespace complist_BACK.RequestHandlers.DictionariesService
 {
+    using complist_BACK.Entities;
+    using Microsoft.EntityFrameworkCore;
+
     public static class DictionariesService
     {
-        public static async Task<IResult> Handle(ApplicationContext db)
+        public static async Task<IResult> Get(ApplicationContext db)
         {
             var phonesResult = await db.PhoneTypes
                 .Select(pt => new
@@ -17,7 +19,10 @@ namespace complist_BACK.RequestHandlers.DictionariesService
                         users = p.Users.Select(u => new
                         {
                             id = u.Id,
-                            name = u.Name
+                            name = !string.IsNullOrWhiteSpace(u.Name)
+                                ? u.Name
+                                : $"{u.Position.Name} {u.Department.Name}" +
+                                  (u.Section != null ? $" / {u.Section.Name}" : "")
                         }).ToList()
                     }).ToList()
                 })
@@ -51,6 +56,19 @@ namespace complist_BACK.RequestHandlers.DictionariesService
                     departmentName = d.Name,
                     priority = d.PhonesPagePriority,
 
+                    users = d.Users
+                        .Where(u => u.SectionId == null)
+                        .Select(u => new
+                        {
+                            id = u.Id,
+                            name = u.Name,
+                            positionId = u.PositionId,
+                            userTypeId = u.UserTypeId,
+                            positionName = u.Position != null ? u.Position.Name : null,
+                            userType = u.UserType.Name
+                        })
+                        .ToList(),
+
                     sections = d.Sections
                         .OrderBy(s => s.PhonesPagePriority)
                         .Select(s => new
@@ -58,9 +76,50 @@ namespace complist_BACK.RequestHandlers.DictionariesService
                             sectionId = s.Id,
                             sectionName = s.Name,
                             sectionPriority = s.PhonesPagePriority,
-                            departmentId = s.DepartmentId
+                            departmentId = s.DepartmentId,
+
+                            users = s.Users
+                                .Select(u => new
+                                {
+                                    id = u.Id,
+                                    name = u.Name,
+                                    positionId = u.PositionId,
+                                    positionName = u.Position != null ? u.Position.Name : null,
+                                    userTypeId = u.UserTypeId,
+                                    userType = u.UserType.Name
+                                })
+                                .ToList()
                         })
                         .ToList()
+                })
+                .ToListAsync();
+
+            var users = await db.Users
+                .Select(u => new
+                {
+                    id = u.Id,
+                    name = !string.IsNullOrWhiteSpace(u.Name)
+                        ? u.Name
+                        : $"{u.Position.Name} {u.Department.Name}" +
+                          (u.Section != null ? $" / {u.Section.Name}" : "")
+                })
+                .ToListAsync();
+
+            var sections = await db.Sections
+                .OrderBy(s => s.PhonesPagePriority)
+                .Select(s => new
+                {
+                    id = s.Id,
+                    name = s.Name
+                })
+                .ToListAsync();
+
+            var deps = await db.Departments
+                .OrderBy(d => d.PhonesPagePriority)
+                .Select(d => new
+                {
+                    id = d.Id,
+                    name = d.Name
                 })
                 .ToListAsync();
 
@@ -69,7 +128,10 @@ namespace complist_BACK.RequestHandlers.DictionariesService
                 phonesResult,
                 positions,
                 userTypes,
-                departments
+                departments,
+                users,
+                sections,
+                deps
             });
         }
     }

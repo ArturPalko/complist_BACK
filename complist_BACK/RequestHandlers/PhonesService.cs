@@ -1,5 +1,6 @@
 ﻿using complist_BACK.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Text.Json;
 
 namespace complist_BACK.RequestHandlers
@@ -184,7 +185,7 @@ namespace complist_BACK.RequestHandlers
                 {
                     oldPhone.Users.Remove(user);
 
-                   
+
                 }
             }
 
@@ -272,8 +273,90 @@ namespace complist_BACK.RequestHandlers
 
             return Results.Ok();
         }
+        public static async Task<IResult> Assign(ApplicationContext db, HttpRequest request)
+        {
+            var data = await request.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
+
+            var userId = data["userId"].GetInt32();
+
+            int? transferId = null;
+
+            if (data.TryGetValue("transferId", out var transferElement) &&
+                transferElement.ValueKind != JsonValueKind.Null)
+            {
+                transferId = transferElement.GetInt32();
+            }
+
+            var user = await db.Users
+                .Include(u => u.Phones)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                return Results.NotFound();
+
+            if (transferId == null)
+            {
+                var phones = data["phones"];
+
+                int? GetPhoneId(string type)
+                {
+                    var phone = phones.GetProperty(type);
+
+                    if (phone.ValueKind == JsonValueKind.String &&
+                        string.IsNullOrEmpty(phone.GetString()))
+                    {
+                        return null;
+                    }
+
+                    return phone.GetInt32();
+                }
+
+                var phoneIds = new[]
+                {
+            GetPhoneId("cisco"),
+            GetPhoneId("internal"),
+            GetPhoneId("landline")
+        }
+                .Where(id => id.HasValue)
+                .Select(id => id.Value)
+                .ToArray();
+
+                var phonesToAssign = await db.Phones
+                    .Where(p => phoneIds.Contains(p.Id))
+                    .ToListAsync();
+
+                user.Phones.Clear();
+
+                foreach (var phone in phonesToAssign)
+                {
+                    user.Phones.Add(phone);
+                }
+            }
+            else
+            {
+                var transferUser = await db.Users
+                    .Include(u => u.Phones)
+                    .FirstOrDefaultAsync(u => u.Id == transferId);
+
+                if (transferUser == null)
+                    return Results.NotFound();
+
+                transferUser.Phones.Clear();
+
+                foreach (var phone in user.Phones)
+                {
+                    transferUser.Phones.Add(phone);
+                }
+
+                user.Phones.Clear();
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok();
+        }
+
+
     }
-
-
 }
 
