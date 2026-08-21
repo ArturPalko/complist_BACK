@@ -132,6 +132,10 @@ namespace complist_BACK.RequestHandlers
 
                             DepartmentId = deptGroup.Key,
 
+                      DepartmentName = deptGroup
+                        .Select(u => u.DepartmentName)
+                        .FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? "Unknown",
+
                             SectionName = sectionGroup
                                 .Select(x => x.SectionName)
                                 .FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? "Unknown",
