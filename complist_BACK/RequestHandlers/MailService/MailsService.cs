@@ -1,19 +1,19 @@
 ﻿namespace complist_BACK.RequestHandlers.MailService
 {
-    using Azure.Core;
     using complist_BACK.Entities;
     using complist_BACK.RequestHandlers.MailService.helpers;
     using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
-    using System.Linq;
     using System.Text.Json;
-
 
     public static class MailsService
     {
-        public static async Task<IResult> GetMails(string mailType, ApplicationContext db)
+        public static async Task<IResult> GetMails(
+            string mailType,
+            ApplicationContext db)
         {
-            var mailsData = await GetMails_endpoint.GetData(mailType, db);
+            var mailsData =
+                await GetMails_endpoint.GetData(mailType, db);
 
             object mails = mailType switch
             {
@@ -26,9 +26,9 @@
         }
 
         public static async Task<IResult> GetMailsPasswords(
-           string mailType,
-           ApplicationContext db,
-           int? id)
+            string mailType,
+            ApplicationContext db,
+            int? id)
         {
             var query = db.Mails
                 .Include(m => m.MailType)
@@ -60,9 +60,9 @@
         }
 
         public static async Task<IResult> AddMail(
-      string mailType,
-      ApplicationContext db,
-      HttpRequest request)
+            string mailType,
+            ApplicationContext db,
+            HttpRequest request)
         {
             var data =
                 await request.ReadFromJsonAsync<
@@ -79,17 +79,14 @@
             };
 
             if (typeId == 0)
-                return Results.BadRequest(
-                    "Unknown mail type");
+                return Results.BadRequest("Unknown mail type");
 
-            var ownerType =
-                data["ownerType"].GetString();
+            if (!data.TryGetValue("ownerType", out var ownerTypeElement))
+                return Results.BadRequest("ownerType is required");
 
-            var ownerId =
-                data["ownerId"].GetInt32();
+            var ownerType = ownerTypeElement.GetString();
 
-            var mails =
-                await db.Mails.ToListAsync();
+            var mails = await db.Mails.ToListAsync();
 
             foreach (var m in mails)
             {
@@ -99,37 +96,129 @@
             var newMail = new Mail
             {
                 Name = data["mail"].GetString(),
+
                 PreviousName =
-         mailType == "Lotus"
-         && data.TryGetValue(
-             "previousName",
-             out var previousName)
-             ? previousName.GetString()
-             : null,
+                    mailType == "Lotus"
+                    && data.TryGetValue(
+                        "previousName",
+                        out var previousName)
+                        ? previousName.GetString()
+                        : null,
 
                 MailTypeId = typeId,
+
                 Priority = 1,
 
                 Password =
-         data.TryGetValue(
-             "password",
-             out var password)
-         ? password.GetString()
-         : null
+                    data.TryGetValue(
+                        "password",
+                        out var password)
+                        ? password.GetString()
+                        : null
             };
+
             switch (ownerType)
             {
                 case "department":
-                    newMail.DepartmentId = ownerId;
-                    break;
+                    {
+                        if (!data.TryGetValue(
+                            "ownerId",
+                            out var ownerIdElement))
+                        {
+                            return Results.BadRequest(
+                                "ownerId is required");
+                        }
+
+                        var ownerId = ownerIdElement.GetInt32();
+
+                        var department =
+                            await db.Departments.FindAsync(ownerId);
+
+                        if (department == null)
+                        {
+                            return Results.BadRequest(
+                                "Department not found");
+                        }
+
+                        newMail.DepartmentId = ownerId;
+
+                        break;
+                    }
 
                 case "section":
-                    newMail.SectionId = ownerId;
-                    break;
+                    {
+                        if (!data.TryGetValue(
+                            "ownerIds",
+                            out var ownerIdsElement))
+                        {
+                            return Results.BadRequest(
+                                "ownerIds is required");
+                        }
+
+                        if (ownerIdsElement.ValueKind !=
+                            JsonValueKind.Array)
+                        {
+                            return Results.BadRequest(
+                                "ownerIds must be an array");
+                        }
+
+                        var sectionIds = ownerIdsElement
+                            .EnumerateArray()
+                            .Select(x => x.GetInt32())
+                            .Distinct()
+                            .ToList();
+
+                        if (!sectionIds.Any())
+                        {
+                            return Results.BadRequest(
+                                "At least one section is required");
+                        }
+
+                        var sections =
+                            await db.Sections
+                                .Where(s =>
+                                    sectionIds.Contains(s.Id))
+                                .ToListAsync();
+
+                        if (sections.Count != sectionIds.Count)
+                        {
+                            return Results.BadRequest(
+                                "One or more sections not found");
+                        }
+
+                        foreach (var section in sections)
+                        {
+                            newMail.Sections.Add(section);
+                        }
+
+                        break;
+                    }
 
                 case "user":
-                    newMail.UserId = ownerId;
-                    break;
+                    {
+                        if (!data.TryGetValue(
+                            "ownerId",
+                            out var ownerIdElement))
+                        {
+                            return Results.BadRequest(
+                                "ownerId is required");
+                        }
+
+                        var ownerId = ownerIdElement.GetInt32();
+
+                        var user =
+                            await db.Users.FindAsync(ownerId);
+
+                        if (user == null)
+                        {
+                            return Results.BadRequest(
+                                "User not found");
+                        }
+
+                        newMail.UserId = ownerId;
+
+                        break;
+                    }
 
                 default:
                     return Results.BadRequest(
@@ -148,10 +237,10 @@
                     out var responsibleUsers)
             )
             {
-                var ids =
-                    responsibleUsers
-                        .EnumerateArray()
-                        .Select(x => x.GetInt32());
+                var ids = responsibleUsers
+                    .EnumerateArray()
+                    .Select(x => x.GetInt32())
+                    .Distinct();
 
                 foreach (var userId in ids)
                 {
@@ -166,14 +255,15 @@
                 await db.SaveChangesAsync();
             }
 
-           return Results.Ok(); 
+            return Results.Ok();
         }
 
         public static async Task<IResult> DeleteMail(
-     ApplicationContext db,
-     HttpRequest request)
+            ApplicationContext db,
+            HttpRequest request)
         {
-            var ids = await request.ReadFromJsonAsync<List<int>>();
+            var ids =
+                await request.ReadFromJsonAsync<List<int>>();
 
             if (ids == null || !ids.Any())
                 return Results.BadRequest("No ids provided");
@@ -202,11 +292,12 @@
 
             return Results.Ok();
         }
+
         public static async Task<IResult> EditMail(
-    string mailType,
-    ApplicationContext db,
-    int id,
-    HttpRequest request)
+            string mailType,
+            ApplicationContext db,
+            int id,
+            HttpRequest request)
         {
             var data =
                 await request.ReadFromJsonAsync<
@@ -217,8 +308,8 @@
 
             var mail =
                 await db.Mails
-                    .FirstOrDefaultAsync(
-                        x => x.Id == id);
+                    .Include(m => m.Sections)
+                    .FirstOrDefaultAsync(x => x.Id == id);
 
             if (mail == null)
                 return Results.NotFound();
@@ -237,7 +328,7 @@
                 data.TryGetValue(
                     "autoUpdatePreviousName",
                     out var autoUpdate)
-                    && autoUpdate.GetBoolean();
+                && autoUpdate.GetBoolean();
 
             if (mailType == "Lotus")
             {
@@ -270,29 +361,118 @@
                 mail.Name = newName;
             }
 
+            // Очистити старого власника
             mail.DepartmentId = null;
-            mail.SectionId = null;
             mail.UserId = null;
+            mail.Sections.Clear();
 
             var ownerType =
                 data["ownerType"].GetString();
 
-            var ownerId =
-                data["ownerId"].GetInt32();
-
             switch (ownerType)
             {
                 case "department":
-                    mail.DepartmentId = ownerId;
-                    break;
+                    {
+                        if (!data.TryGetValue(
+                            "ownerId",
+                            out var ownerIdElement))
+                        {
+                            return Results.BadRequest(
+                                "ownerId is required");
+                        }
+
+                        var ownerId =
+                            ownerIdElement.GetInt32();
+
+                        var department =
+                            await db.Departments.FindAsync(ownerId);
+
+                        if (department == null)
+                        {
+                            return Results.BadRequest(
+                                "Department not found");
+                        }
+
+                        mail.DepartmentId = ownerId;
+
+                        break;
+                    }
 
                 case "section":
-                    mail.SectionId = ownerId;
-                    break;
+                    {
+                        if (!data.TryGetValue(
+                            "ownerIds",
+                            out var ownerIdsElement))
+                        {
+                            return Results.BadRequest(
+                                "ownerIds is required");
+                        }
+
+                        if (ownerIdsElement.ValueKind !=
+                            JsonValueKind.Array)
+                        {
+                            return Results.BadRequest(
+                                "ownerIds must be an array");
+                        }
+
+                        var sectionIds = ownerIdsElement
+                            .EnumerateArray()
+                            .Select(x => x.GetInt32())
+                            .Distinct()
+                            .ToList();
+
+                        if (!sectionIds.Any())
+                        {
+                            return Results.BadRequest(
+                                "At least one section is required");
+                        }
+
+                        var sections =
+                            await db.Sections
+                                .Where(s =>
+                                    sectionIds.Contains(s.Id))
+                                .ToListAsync();
+
+                        if (sections.Count != sectionIds.Count)
+                        {
+                            return Results.BadRequest(
+                                "One or more sections not found");
+                        }
+
+                        foreach (var section in sections)
+                        {
+                            mail.Sections.Add(section);
+                        }
+
+                        break;
+                    }
 
                 case "user":
-                    mail.UserId = ownerId;
-                    break;
+                    {
+                        if (!data.TryGetValue(
+                            "ownerId",
+                            out var ownerIdElement))
+                        {
+                            return Results.BadRequest(
+                                "ownerId is required");
+                        }
+
+                        var ownerId =
+                            ownerIdElement.GetInt32();
+
+                        var user =
+                            await db.Users.FindAsync(ownerId);
+
+                        if (user == null)
+                        {
+                            return Results.BadRequest(
+                                "User not found");
+                        }
+
+                        mail.UserId = ownerId;
+
+                        break;
+                    }
 
                 default:
                     return Results.BadRequest(
@@ -326,7 +506,8 @@
                     var ids =
                         responsibleUsers
                             .EnumerateArray()
-                            .Select(x => x.GetInt32());
+                            .Select(x => x.GetInt32())
+                            .Distinct();
 
                     foreach (var userId in ids)
                     {

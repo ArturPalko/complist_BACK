@@ -5,20 +5,30 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
 {
     public class GetMails_endpoint
     {
-        public static async Task<List<Mail>> GetData(string mailType, ApplicationContext db)
+        public static async Task<List<Mail>> GetData(
+            string mailType,
+            ApplicationContext db)
         {
             return await db.Mails
                 .Where(m => m.MailType.Name == mailType)
+
                 .Include(m => m.Department)
-                .Include(m => m.Section)
+
+                // M:N Mail <-> Sections
+                .Include(m => m.Sections)
                     .ThenInclude(s => s.Department)
+
                 .Include(m => m.User)
                     .ThenInclude(u => u.Department)
+
                 .Include(m => m.User)
                     .ThenInclude(u => u.Section)
+
                 .Include(m => m.ResponsibleUsers)
                     .ThenInclude(r => r.User)
+
                 .Include(m => m.MailType)
+
                 .ToListAsync();
         }
 
@@ -27,86 +37,97 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
         // =========================
         public static object MapGovUa(List<Mail> mails)
         {
-            return mails.Select(m => new
-            {
-                MailName = m.Name,
-
-                DepartmentOrSection =
-                    m.Department?.Name
-                    ?? m.Section?.Name
-                    ?? m.User?.Department?.Name
-                    ?? m.User?.Section?.Name
-                    ?? "",
-
-                m.Id,
-                m.Priority,
-
-                userName = m.User != null ? m.User.Name : "",
-                /* ResponsibleUsers =
-     (
-         m.User != null
-             ? new[]
-             {
-                 new
-                 {
-                     id = m.User.Id,
-                     name = m.User.Name
-                 }
-             }
-             : m.ResponsibleUsers
-                 .Select(x => new
-                 {
-                     id = x.UserId,
-                     name = x.User.Name
-                 })
-     ).ToList(),
-                 ResponsibleUser =
-                     m.ResponsibleUsers
-                         .Select(x => x.User.Name)
-                         .FirstOrDefault() ?? "",
-                 ResponsibleUserIds =
-     m.ResponsibleUsers
-         .Select(x => x.UserId)
-         .ToList(),*/
-                 OwnerType =
-                     m.User != null ? "User"
-                     : m.Department != null ? "Department"
-                     : m.Section != null ? "Section"
-                     : "",
-                ResponsibleUsers =
-    m.User == null
-        ? m.ResponsibleUsers
-            .Select(x => new
-            {
-                id = x.UserId,
-                name = x.User.Name
-            })
-        : Enumerable.Empty<object>(),
-                OwnerId =
-    m.UserId
-    ?? m.DepartmentId
-    ?? m.SectionId
-    ?? 0,
-
-                PasswordKnown = !string.IsNullOrEmpty(m.Password),
-
-                DepSec = new
+            return mails
+                .Select(m => new
                 {
-                    Department =
+                    MailName = m.Name,
+
+                    // Показуємо всі секції
+                    DepartmentOrSection =
                         m.Department?.Name
+                        ?? string.Join(
+                            ", ",
+                            m.Sections.Select(s => s.Name))
                         ?? m.User?.Department?.Name
-                        ?? m.Section?.Department?.Name
-                        ?? m.User?.Section?.Department?.Name
+                        ?? m.User?.Section?.Name
                         ?? "",
 
-                    Section =
-                        m.Section?.Name
-                        ?? m.User?.Section?.Name
-                        ?? ""
-                }
-            })
-            .OrderBy(x => x.Priority)
-            .ToList();
+                    m.Id,
+                    m.Priority,
+
+                    userName =
+                        m.User != null
+                            ? m.User.Name
+                            : "",
+
+                    OwnerType =
+                        m.User != null
+                            ? "User"
+                            : m.Department != null
+                                ? "Department"
+                                : m.Sections.Any()
+                                    ? "Section"
+                                    : "",
+
+                    ResponsibleUsers =
+                        m.User == null
+                            ? m.ResponsibleUsers
+                                .Select(x => new
+                                {
+                                    id = x.UserId,
+                                    name = x.User.Name
+                                })
+                            : Enumerable.Empty<object>(),
+
+                    // Новий список Section IDs
+                    OwnerIds =
+                        m.Sections
+                            .Select(s => s.Id)
+                            .ToList(),
+
+                    // Залишаємо OwnerId для department/user
+                    OwnerId =
+                        m.UserId
+                        ?? m.DepartmentId
+                        ?? 0,
+
+                    // Повна інформація про секції
+                    Sections =
+                        m.Sections
+                            .Select(s => new
+                            {
+                                id = s.Id,
+                                name = s.Name,
+                                departmentId = s.DepartmentId,
+                                departmentName =
+                                    s.Department?.Name ?? ""
+                            })
+                            .ToList(),
+
+                    PasswordKnown =
+                        !string.IsNullOrEmpty(m.Password),
+
+                    DepSec = new
+                    {
+                        Department =
+                            m.Department?.Name
+                            ?? m.User?.Department?.Name
+                            ?? m.Sections
+                                .Select(s => s.Department?.Name)
+                                .FirstOrDefault(x =>
+                                    !string.IsNullOrEmpty(x))
+                            ?? m.User?.Section?.Department?.Name
+                            ?? "",
+
+                        // Всі секції
+                        Section =
+                            string.Join(
+                                ", ",
+                                m.Sections.Select(s => s.Name))
+                    }
+                })
+                .OrderBy(x => x.Priority)
+                .ToList();
         }
 
         // =========================
@@ -114,49 +135,80 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
         // =========================
         public static object MapLotus(List<Mail> mails)
         {
-            return mails.Select(m => new
-            {
-                m.Id,
-                m.Priority,
-                m.PreviousName,
-                m.Name,
-
-                Owner =
-                    m.User?.Name
-                    ?? m.Department?.Name
-                    ?? m.Section?.Name
-                    ?? m.User?.Department?.Name
-                    ?? m.User?.Section?.Name
-                    ?? "",
-                OwnerId =
-    m.UserId
-    ?? m.DepartmentId
-    ?? m.SectionId
-    ?? 0,
-                OwnerType =
-                    m.User != null ? "User"
-                    : m.Department != null ? "Department"
-                    : m.Section != null ? "Section"
-                    : "",
-
-                PasswordKnown = !string.IsNullOrEmpty(m.Password),
-
-                DepSec = new
+            return mails
+                .Select(m => new
                 {
-                    Department =
-                        m.Department?.Name
+                    m.Id,
+                    m.Priority,
+                    m.PreviousName,
+                    m.Name,
+
+                    Owner =
+                        m.User?.Name
+                        ?? m.Department?.Name
+                        ?? string.Join(
+                            ", ",
+                            m.Sections.Select(s => s.Name))
                         ?? m.User?.Department?.Name
-                        ?? m.Section?.Department?.Name
+                        ?? m.User?.Section?.Name
                         ?? "",
 
-                    Section =
-                        m.Section?.Name
-                        ?? m.User?.Section?.Name
-                        ?? ""
-                }
-            })
-            .OrderBy(x => x.Priority)
-            .ToList();
+                    OwnerId =
+                        m.UserId
+                        ?? m.DepartmentId
+                        ?? 0,
+
+                    OwnerType =
+                        m.User != null
+                            ? "User"
+                            : m.Department != null
+                                ? "Department"
+                                : m.Sections.Any()
+                                    ? "Section"
+                                    : "",
+
+                    // IDs усіх секцій
+                    OwnerIds =
+                        m.Sections
+                            .Select(s => s.Id)
+                            .ToList(),
+
+                    // Повна інформація про секції
+                    Sections =
+                        m.Sections
+                            .Select(s => new
+                            {
+                                id = s.Id,
+                                name = s.Name,
+                                departmentId = s.DepartmentId,
+                                departmentName =
+                                    s.Department?.Name ?? ""
+                            })
+                            .ToList(),
+
+                    PasswordKnown =
+                        !string.IsNullOrEmpty(m.Password),
+
+                    DepSec = new
+                    {
+                        Department =
+                            m.Department?.Name
+                            ?? m.User?.Department?.Name
+                            ?? m.Sections
+                                .Select(s => s.Department?.Name)
+                                .FirstOrDefault(x =>
+                                    !string.IsNullOrEmpty(x))
+                            ?? m.User?.Section?.Department?.Name
+                            ?? "",
+
+                        Section =
+                            string.Join(
+                                ", ",
+                                m.Sections.Select(s => s.Name))
+                    }
+                })
+                .OrderBy(x => x.Priority)
+                .ToList();
         }
     }
 }

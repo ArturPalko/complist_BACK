@@ -106,13 +106,14 @@
                 .ToListAsync();
 
             var sections = await db.Sections
-                .OrderBy(s => s.PhonesPagePriority)
-                .Select(s => new
-                {
-                    id = s.Id,
-                    name = s.Name
-                })
-                .ToListAsync();
+         .OrderBy(s => s.PhonesPagePriority)
+         .Select(s => new
+         {
+             id = s.Id,
+             name = s.Name,
+             departmentId = s.DepartmentId
+         })
+         .ToListAsync();
 
             var deps = await db.Departments
                 .OrderBy(d => d.PhonesPagePriority)
