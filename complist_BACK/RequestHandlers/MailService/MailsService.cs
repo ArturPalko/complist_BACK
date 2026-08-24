@@ -81,8 +81,12 @@
             if (typeId == 0)
                 return Results.BadRequest("Unknown mail type");
 
-            if (!data.TryGetValue("ownerType", out var ownerTypeElement))
+            if (!data.TryGetValue(
+                "ownerType",
+                out var ownerTypeElement))
+            {
                 return Results.BadRequest("ownerType is required");
+            }
 
             var ownerType = ownerTypeElement.GetString();
 
@@ -91,6 +95,21 @@
             foreach (var m in mails)
             {
                 m.Priority++;
+            }
+
+            string? ownerDisplayName = null;
+
+            if (data.TryGetValue(
+                "ownerDisplayName",
+                out var ownerDisplayNameElement))
+            {
+                ownerDisplayName =
+                    ownerDisplayNameElement.GetString();
+
+                if (string.IsNullOrWhiteSpace(ownerDisplayName))
+                {
+                    ownerDisplayName = null;
+                }
             }
 
             var newMail = new Mail
@@ -106,7 +125,6 @@
                         : null,
 
                 MailTypeId = typeId,
-
                 Priority = 1,
 
                 Password =
@@ -114,7 +132,9 @@
                         "password",
                         out var password)
                         ? password.GetString()
-                        : null
+                        : null,
+
+                OwnerDisplayName = ownerDisplayName
             };
 
             switch (ownerType)
@@ -129,7 +149,8 @@
                                 "ownerId is required");
                         }
 
-                        var ownerId = ownerIdElement.GetInt32();
+                        var ownerId =
+                            ownerIdElement.GetInt32();
 
                         var department =
                             await db.Departments.FindAsync(ownerId);
@@ -162,11 +183,12 @@
                                 "ownerIds must be an array");
                         }
 
-                        var sectionIds = ownerIdsElement
-                            .EnumerateArray()
-                            .Select(x => x.GetInt32())
-                            .Distinct()
-                            .ToList();
+                        var sectionIds =
+                            ownerIdsElement
+                                .EnumerateArray()
+                                .Select(x => x.GetInt32())
+                                .Distinct()
+                                .ToList();
 
                         if (!sectionIds.Any())
                         {
@@ -191,6 +213,11 @@
                             newMail.Sections.Add(section);
                         }
 
+                        if (sectionIds.Count <= 1)
+                        {
+                            newMail.OwnerDisplayName = null;
+                        }
+
                         break;
                     }
 
@@ -204,7 +231,8 @@
                                 "ownerId is required");
                         }
 
-                        var ownerId = ownerIdElement.GetInt32();
+                        var ownerId =
+                            ownerIdElement.GetInt32();
 
                         var user =
                             await db.Users.FindAsync(ownerId);
@@ -216,6 +244,16 @@
                         }
 
                         newMail.UserId = ownerId;
+                        newMail.OwnerDisplayName = null;
+
+                        break;
+                    }
+
+                case "none":
+                    {
+                        newMail.DepartmentId = null;
+                        newMail.UserId = null;
+                        newMail.Sections.Clear();
 
                         break;
                     }
@@ -234,13 +272,13 @@
                 &&
                 data.TryGetValue(
                     "responsibleUserIds",
-                    out var responsibleUsers)
-            )
+                    out var responsibleUsers))
             {
-                var ids = responsibleUsers
-                    .EnumerateArray()
-                    .Select(x => x.GetInt32())
-                    .Distinct();
+                var ids =
+                    responsibleUsers
+                        .EnumerateArray()
+                        .Select(x => x.GetInt32())
+                        .Distinct();
 
                 foreach (var userId in ids)
                 {
@@ -268,9 +306,10 @@
             if (ids == null || !ids.Any())
                 return Results.BadRequest("No ids provided");
 
-            var mailsToDelete = await db.Mails
-                .Where(x => ids.Contains(x.Id))
-                .ToListAsync();
+            var mailsToDelete =
+                await db.Mails
+                    .Where(x => ids.Contains(x.Id))
+                    .ToListAsync();
 
             if (!mailsToDelete.Any())
                 return Results.NotFound();
@@ -279,9 +318,10 @@
 
             await db.SaveChangesAsync();
 
-            var remainingMails = await db.Mails
-                .OrderBy(x => x.Priority)
-                .ToListAsync();
+            var remainingMails =
+                await db.Mails
+                    .OrderBy(x => x.Priority)
+                    .ToListAsync();
 
             for (int i = 0; i < remainingMails.Count; i++)
             {
@@ -361,7 +401,24 @@
                 mail.Name = newName;
             }
 
-            // Очистити старого власника
+            if (data.TryGetValue(
+                "ownerDisplayName",
+                out var ownerDisplayNameElement))
+            {
+                mail.OwnerDisplayName =
+                    ownerDisplayNameElement.GetString();
+
+                if (string.IsNullOrWhiteSpace(
+                    mail.OwnerDisplayName))
+                {
+                    mail.OwnerDisplayName = null;
+                }
+            }
+            else
+            {
+                mail.OwnerDisplayName = null;
+            }
+
             mail.DepartmentId = null;
             mail.UserId = null;
             mail.Sections.Clear();
@@ -394,6 +451,7 @@
                         }
 
                         mail.DepartmentId = ownerId;
+                        mail.OwnerDisplayName = null;
 
                         break;
                     }
@@ -415,11 +473,12 @@
                                 "ownerIds must be an array");
                         }
 
-                        var sectionIds = ownerIdsElement
-                            .EnumerateArray()
-                            .Select(x => x.GetInt32())
-                            .Distinct()
-                            .ToList();
+                        var sectionIds =
+                            ownerIdsElement
+                                .EnumerateArray()
+                                .Select(x => x.GetInt32())
+                                .Distinct()
+                                .ToList();
 
                         if (!sectionIds.Any())
                         {
@@ -442,6 +501,11 @@
                         foreach (var section in sections)
                         {
                             mail.Sections.Add(section);
+                        }
+
+                        if (sectionIds.Count <= 1)
+                        {
+                            mail.OwnerDisplayName = null;
                         }
 
                         break;
@@ -470,6 +534,16 @@
                         }
 
                         mail.UserId = ownerId;
+                        mail.OwnerDisplayName = null;
+
+                        break;
+                    }
+
+                case "none":
+                    {
+                        mail.DepartmentId = null;
+                        mail.UserId = null;
+                        mail.Sections.Clear();
 
                         break;
                     }
@@ -479,10 +553,9 @@
                         "Unknown owner type");
             }
 
-            if (
-                data.TryGetValue(
-                    "password",
-                    out var password))
+            if (data.TryGetValue(
+                "password",
+                out var password))
             {
                 mail.Password =
                     password.GetString();
@@ -495,13 +568,11 @@
                         .Where(x => x.MailId == mail.Id)
                         .ToListAsync();
 
-                db.ResponsibleUsers
-                    .RemoveRange(existing);
+                db.ResponsibleUsers.RemoveRange(existing);
 
-                if (
-                    data.TryGetValue(
-                        "responsibleUserIds",
-                        out var responsibleUsers))
+                if (data.TryGetValue(
+                    "responsibleUserIds",
+                    out var responsibleUsers))
                 {
                     var ids =
                         responsibleUsers

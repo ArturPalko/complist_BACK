@@ -23,5 +23,6 @@ namespace complist_BACK.Entities
         public int Priority { get; set; }
 
         public List<ResponsibleUser> ResponsibleUsers { get; set; } = new();
+        public string? OwnerDisplayName { get; set; }
     }
 }

@@ -11,54 +11,60 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
         {
             return await db.Mails
                 .Where(m => m.MailType.Name == mailType)
-
                 .Include(m => m.Department)
-
-                // M:N Mail <-> Sections
                 .Include(m => m.Sections)
                     .ThenInclude(s => s.Department)
-
                 .Include(m => m.User)
                     .ThenInclude(u => u.Department)
-
                 .Include(m => m.User)
                     .ThenInclude(u => u.Section)
-
                 .Include(m => m.ResponsibleUsers)
                     .ThenInclude(r => r.User)
-
                 .Include(m => m.MailType)
-
                 .ToListAsync();
         }
 
-        // =========================
-        // GOV-UA DTO
-        // =========================
         public static object MapGovUa(List<Mail> mails)
         {
             return mails
                 .Select(m => new
                 {
-                    MailName = m.Name,
+                    m.Id,
+                    m.Priority,
+                    m.PreviousName,
+                    Name = m.Name,
 
-                    // Показуємо всі секції
-                    DepartmentOrSection =
-                        m.Department?.Name
-                        ?? string.Join(
-                            ", ",
-                            m.Sections.Select(s => s.Name))
+                    OwnerDisplayName = m.OwnerDisplayName,
+
+                    Owner =
+                        m.OwnerDisplayName
+                        ?? m.Department?.Name
+                        ?? (
+                            m.Sections.Any()
+                                ? string.Join(
+                                    ", ",
+                                    m.Sections.Select(s => s.Name)
+                                )
+                                : null
+                        )
                         ?? m.User?.Department?.Name
                         ?? m.User?.Section?.Name
                         ?? "",
-
-                    m.Id,
-                    m.Priority,
 
                     userName =
                         m.User != null
                             ? m.User.Name
                             : "",
+
+                    OwnerId =
+                        m.UserId
+                        ?? m.DepartmentId
+                        ?? 0,
+
+                    OwnerIds =
+                        m.Sections
+                            .Select(s => s.Id)
+                            .ToList(),
 
                     OwnerType =
                         m.User != null
@@ -67,31 +73,23 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                                 ? "Department"
                                 : m.Sections.Any()
                                     ? "Section"
-                                    : "",
+                                    : !string.IsNullOrEmpty(m.OwnerDisplayName)
+                                        ? "None"
+                                        : "",
 
                     ResponsibleUsers =
-                        m.User == null
-                            ? m.ResponsibleUsers
-                                .Select(x => new
-                                {
-                                    id = x.UserId,
-                                    name = x.User.Name
-                                })
-                            : Enumerable.Empty<object>(),
-
-                    // Новий список Section IDs
-                    OwnerIds =
-                        m.Sections
-                            .Select(s => s.Id)
+                        m.ResponsibleUsers
+                            .Select(x => new
+                            {
+                                id = x.UserId,
+                                name = x.User.Name
+                            })
                             .ToList(),
 
-                    // Залишаємо OwnerId для department/user
-                    OwnerId =
-                        m.UserId
-                        ?? m.DepartmentId
-                        ?? 0,
+                   HasResponsible =
+                        m.UserId.HasValue ||
+                        m.ResponsibleUsers.Any(),
 
-                    // Повна інформація про секції
                     Sections =
                         m.Sections
                             .Select(s => new
@@ -114,25 +112,23 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                             ?? m.User?.Department?.Name
                             ?? m.Sections
                                 .Select(s => s.Department?.Name)
-                                .FirstOrDefault(x =>
-                                    !string.IsNullOrEmpty(x))
+                                .FirstOrDefault(
+                                    x => !string.IsNullOrEmpty(x)
+                                )
                             ?? m.User?.Section?.Department?.Name
                             ?? "",
 
-                        // Всі секції
                         Section =
                             string.Join(
                                 ", ",
-                                m.Sections.Select(s => s.Name))
+                                m.Sections.Select(s => s.Name)
+                            )
                     }
                 })
                 .OrderBy(x => x.Priority)
                 .ToList();
         }
 
-        // =========================
-        // LOTUS DTO
-        // =========================
         public static object MapLotus(List<Mail> mails)
         {
             return mails
@@ -141,14 +137,19 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                     m.Id,
                     m.Priority,
                     m.PreviousName,
-                    m.Name,
+                    Name = m.Name,
+
+                    OwnerDisplayName = m.OwnerDisplayName,
 
                     Owner =
-                        m.User?.Name
+                        m.OwnerDisplayName
+                        ?? m.User?.Name
                         ?? m.Department?.Name
-                        ?? string.Join(
-                            ", ",
-                            m.Sections.Select(s => s.Name))
+                        ?? (
+                            m.Sections.Any()
+                                ? string.Join(", ", m.Sections.Select(s => s.Name))
+                                : null
+                        )
                         ?? m.User?.Department?.Name
                         ?? m.User?.Section?.Name
                         ?? "",
@@ -158,6 +159,11 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                         ?? m.DepartmentId
                         ?? 0,
 
+                    OwnerIds =
+                        m.Sections
+                            .Select(s => s.Id)
+                            .ToList(),
+
                     OwnerType =
                         m.User != null
                             ? "User"
@@ -165,15 +171,10 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                                 ? "Department"
                                 : m.Sections.Any()
                                     ? "Section"
-                                    : "",
+                                    : !string.IsNullOrEmpty(m.OwnerDisplayName)
+                                        ? "None"
+                                        : "",
 
-                    // IDs усіх секцій
-                    OwnerIds =
-                        m.Sections
-                            .Select(s => s.Id)
-                            .ToList(),
-
-                    // Повна інформація про секції
                     Sections =
                         m.Sections
                             .Select(s => new
@@ -181,8 +182,16 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                                 id = s.Id,
                                 name = s.Name,
                                 departmentId = s.DepartmentId,
-                                departmentName =
-                                    s.Department?.Name ?? ""
+                                departmentName = s.Department?.Name ?? ""
+                            })
+                            .ToList(),
+
+                    ResponsibleUsers =
+                        m.ResponsibleUsers
+                            .Select(x => new
+                            {
+                                id = x.UserId,
+                                name = x.User.Name
                             })
                             .ToList(),
 
@@ -196,15 +205,15 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
                             ?? m.User?.Department?.Name
                             ?? m.Sections
                                 .Select(s => s.Department?.Name)
-                                .FirstOrDefault(x =>
-                                    !string.IsNullOrEmpty(x))
+                                .FirstOrDefault(x => !string.IsNullOrEmpty(x))
                             ?? m.User?.Section?.Department?.Name
                             ?? "",
 
                         Section =
                             string.Join(
                                 ", ",
-                                m.Sections.Select(s => s.Name))
+                                m.Sections.Select(s => s.Name)
+                            )
                     }
                 })
                 .OrderBy(x => x.Priority)
