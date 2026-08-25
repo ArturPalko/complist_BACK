@@ -55,6 +55,14 @@
                     departmentId = d.Id,
                     departmentName = d.Name,
                     priority = d.PhonesPagePriority,
+                    presentedOnPhonesPage =
+                    d.Users.Any(u =>
+                        u.SectionId == null &&
+                        u.Phones.Any())
+                    ||
+                    d.Sections.Any(s =>
+                        s.Users.Any(u =>
+                            u.Phones.Any())),
 
                     users = d.Users
                         .Where(u => u.SectionId == null)
