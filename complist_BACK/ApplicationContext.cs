@@ -5,7 +5,7 @@
     using Microsoft.EntityFrameworkCore.Internal;
     using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
-    public class ApplicationContext:DbContext
+    public class ApplicationContext : DbContext
     {
         public DbSet<Login> Logins { get; set; }
         public DbSet<User> Users { get; set; }
@@ -15,16 +15,16 @@
         public DbSet<MailType> MailTypes { get; set; }
         public DbSet<PhoneType> PhoneTypes { get; set; }
         public DbSet<Phone> Phones { get; set; }
-        public DbSet<Mail> Mails { get; set; }  
+        public DbSet<Mail> Mails { get; set; }
         public DbSet<UserType> UserTypes { get; set; }
         public DbSet<ResponsibleUser> ResponsibleUsers { get; set; }
 
 
-        public ApplicationContext(DbContextOptions<ApplicationContext> options) 
-        :base(options)
+        public ApplicationContext(DbContextOptions<ApplicationContext> options)
+        : base(options)
         {
 
-            
+
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -35,7 +35,12 @@
                 .WithOne(s => s.Department)
                 .HasForeignKey(s => s.DepartmentId)
                 .OnDelete(DeleteBehavior.Cascade);
-        }
+            modelBuilder.Entity<Mail>()
+                .HasOne(m => m.User)
+                .WithMany(u => u.Mails)
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+        } 
     }
 }

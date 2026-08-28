@@ -39,16 +39,55 @@
             return Results.Ok(section);
         }
 
-        public static async Task<IResult> Delete(ApplicationContext db, List<int> ids)
+        public static async Task<IResult> Delete(
+           ApplicationContext db,
+           List<int> ids)
         {
-            var items = await db.Sections
-                .Where(x => ids.Contains(x.Id))
+            var sections = await db.Sections
+                .Where(s => ids.Contains(s.Id))
                 .ToListAsync();
 
-            if (!items.Any())
+            if (!sections.Any())
                 return Results.NotFound();
 
-            db.Sections.RemoveRange(items);
+            var sectionIds = sections
+                .Select(s => s.Id)
+                .ToList();
+
+            // Користувачі секцій
+            var users = await db.Users
+                .Where(u =>
+                    u.SectionId.HasValue &&
+                    sectionIds.Contains(u.SectionId.Value))
+                .ToListAsync();
+
+            var userIds = users
+                .Select(u => u.Id)
+                .ToList();
+
+            // Персональні поштові скриньки користувачів
+            var personalMails = await db.Mails
+                .Where(m =>
+                    m.UserId.HasValue &&
+                    userIds.Contains(m.UserId.Value))
+                .ToListAsync();
+
+            db.Mails.RemoveRange(personalMails);
+
+            // Поштові скриньки секцій
+            var sectionMails = await db.Mails
+                .Where(m =>
+                    m.Sections.Any(s => sectionIds.Contains(s.Id)))
+                .ToListAsync();
+
+            db.Mails.RemoveRange(sectionMails);
+
+            // Users
+            db.Users.RemoveRange(users);
+
+            // Sections
+            db.Sections.RemoveRange(sections);
+
             await db.SaveChangesAsync();
 
             return Results.Ok();

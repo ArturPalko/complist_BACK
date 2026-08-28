@@ -111,6 +111,7 @@ privateApi.MapPost("/users", UsersService.Create);
 privateApi.MapPut("/users/{id:int}", UsersService.Update);
 privateApi.MapPost("/users/delete", UsersService.Delete);
 
+
 privateApi.MapPost("/phones", PhonesService.Create);
 privateApi.MapPut("/phones/{id:int}", PhonesService.Edit);
 privateApi.MapPost("/phones/delete", PhonesService.Delete);
@@ -119,6 +120,8 @@ privateApi.MapPut("/assignPhonesToUsers", PhonesService.Assign);
 privateApi.MapPost("/mails/{mailType}", MailsService.AddMail);
 privateApi.MapPut("/mails/{mailType}/{id:int}", MailsService.EditMail);
 privateApi.MapPost("/mails/delete", MailsService.DeleteMail);
+
+privateApi.MapPut("users/transfer", UsersService.Transfer);
 
 app.MapControllers();
 

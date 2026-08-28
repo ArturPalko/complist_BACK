@@ -101,15 +101,31 @@
                         .ToList()
                 })
                 .ToListAsync();
-
             var users = await db.Users
                 .Select(u => new
                 {
                     id = u.Id,
+
                     name = !string.IsNullOrWhiteSpace(u.Name)
                         ? u.Name
                         : $"{u.Position.Name} {u.Department.Name}" +
-                          (u.Section != null ? $" / {u.Section.Name}" : "")
+                          (u.Section != null
+                              ? $" / {u.Section.Name}"
+                              : ""),
+
+                    userType = u.UserType != null
+                        ? u.UserType.Name
+                        : null,
+
+                    department = u.Department != null
+                        ? u.Department.Name
+                        : u.Section != null && u.Section.Department != null
+                            ? u.Section.Department.Name
+                            : null,
+
+                    section = u.Section != null
+                        ? u.Section.Name
+                        : null
                 })
                 .ToListAsync();
 

@@ -33,7 +33,7 @@ namespace complist_BACK.Migrations
 
                     b.HasIndex("SectionsId");
 
-                    b.ToTable("MailSection");
+                    b.ToTable("MailSection", (string)null);
                 });
 
             modelBuilder.Entity("PhoneUser", b =>
@@ -48,7 +48,7 @@ namespace complist_BACK.Migrations
 
                     b.HasIndex("UsersId");
 
-                    b.ToTable("PhoneUser");
+                    b.ToTable("PhoneUser", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.Department", b =>
@@ -68,7 +68,7 @@ namespace complist_BACK.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Departments");
+                    b.ToTable("Departments", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.Login", b =>
@@ -91,7 +91,7 @@ namespace complist_BACK.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Logins");
+                    b.ToTable("Logins", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.Mail", b =>
@@ -134,7 +134,7 @@ namespace complist_BACK.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Mails");
+                    b.ToTable("Mails", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.MailType", b =>
@@ -151,7 +151,7 @@ namespace complist_BACK.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MailTypes");
+                    b.ToTable("MailTypes", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.Phone", b =>
@@ -173,7 +173,7 @@ namespace complist_BACK.Migrations
 
                     b.HasIndex("PhoneTypeId");
 
-                    b.ToTable("Phones");
+                    b.ToTable("Phones", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.PhoneType", b =>
@@ -190,7 +190,7 @@ namespace complist_BACK.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PhoneTypes");
+                    b.ToTable("PhoneTypes", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.Position", b =>
@@ -210,7 +210,7 @@ namespace complist_BACK.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Positions");
+                    b.ToTable("Positions", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.ResponsibleUser", b =>
@@ -233,7 +233,7 @@ namespace complist_BACK.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ResponsibleUsers");
+                    b.ToTable("ResponsibleUsers", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.Section", b =>
@@ -261,7 +261,7 @@ namespace complist_BACK.Migrations
 
                     b.HasIndex("DepartmentId");
 
-                    b.ToTable("Sections");
+                    b.ToTable("Sections", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.User", b =>
@@ -297,7 +297,7 @@ namespace complist_BACK.Migrations
 
                     b.HasIndex("UserTypeId");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("complist_BACK.Entities.UserType", b =>
@@ -317,7 +317,7 @@ namespace complist_BACK.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserTypes");
+                    b.ToTable("UserTypes", (string)null);
                 });
 
             modelBuilder.Entity("MailSection", b =>
