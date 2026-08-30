@@ -23,7 +23,9 @@ namespace complist_BACK.RequestHandlers
                 .ToListAsync();
 
             var userPhones = phonesData
-                .SelectMany(p => p.Users.Select(u => new
+                .SelectMany(p => p.Users
+                .Where(u => u.IsActive)
+                .Select(u => new
                 {
                     User = new
                     {

@@ -125,7 +125,8 @@
 
                     section = u.Section != null
                         ? u.Section.Name
-                        : null
+                        : null,
+                    isActive = u.IsActive
                 })
                 .ToListAsync();
 

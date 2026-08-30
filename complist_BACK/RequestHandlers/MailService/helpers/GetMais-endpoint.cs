@@ -10,7 +10,13 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
             ApplicationContext db)
         {
             return await db.Mails
-                .Where(m => m.MailType.Name == mailType)
+                .Where(m =>
+                        m.MailType.Name == mailType &&
+                        (
+                            m.User == null ||
+                            (m.User != null && m.User.IsActive)
+                        )
+                    )
                 .Include(m => m.Department)
                 .Include(m => m.Sections)
                     .ThenInclude(s => s.Department)
@@ -79,6 +85,7 @@ namespace complist_BACK.RequestHandlers.MailService.helpers
 
                     ResponsibleUsers =
                         m.ResponsibleUsers
+                            .Where(x => x.User.IsActive)
                             .Select(x => new
                             {
                                 id = x.UserId,

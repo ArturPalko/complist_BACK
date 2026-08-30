@@ -249,6 +249,29 @@ public static async Task<IResult> Transfer(
 
             return Results.Ok();
         }
+
+
+        // CHANGE STATUS
+        public static async Task<IResult> ChangeStatus(
+           ApplicationContext db,
+           HttpRequest request,
+           int[] ids)
+        {
+  
+
+            var users = await db.Users
+                .Where(user => ids.Contains(user.Id))
+                .ToListAsync();
+
+            foreach (var user in users)
+            {
+                user.IsActive = !user.IsActive;
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok();
+        }
     }
 }
 

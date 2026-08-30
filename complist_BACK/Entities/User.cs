@@ -15,6 +15,7 @@
         public int? UserTypeId { get; set; }
         public UserType? UserType { get; set;}
         public List<ResponsibleUser>? ResponsibleUsers { get; set; }
+        public bool IsActive { get; set; } = true;
 
     }
 }

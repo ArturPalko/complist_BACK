@@ -122,6 +122,7 @@ privateApi.MapPut("/mails/{mailType}/{id:int}", MailsService.EditMail);
 privateApi.MapPost("/mails/delete", MailsService.DeleteMail);
 
 privateApi.MapPut("users/transfer", UsersService.Transfer);
+privateApi.MapPut("users/changeStatus", UsersService.ChangeStatus);
 
 app.MapControllers();
 
