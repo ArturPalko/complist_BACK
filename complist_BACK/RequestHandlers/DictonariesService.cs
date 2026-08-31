@@ -73,7 +73,8 @@
                             positionId = u.PositionId,
                             userTypeId = u.UserTypeId,
                             positionName = u.Position != null ? u.Position.Name : null,
-                            userType = u.UserType.Name
+                            userType = u.UserType.Name,
+                            isActive = u.IsActive
                         })
                         .ToList(),
 
@@ -94,7 +95,8 @@
                                     positionId = u.PositionId,
                                     positionName = u.Position != null ? u.Position.Name : null,
                                     userTypeId = u.UserTypeId,
-                                    userType = u.UserType.Name
+                                    userType = u.UserType.Name,
+                                    isActive = u.IsActive
                                 })
                                 .ToList()
                         })
@@ -112,7 +114,7 @@
                           (u.Section != null
                               ? $" / {u.Section.Name}"
                               : ""),
-
+                    customName = string.IsNullOrWhiteSpace(u.Name),
                     userType = u.UserType != null
                         ? u.UserType.Name
                         : null,

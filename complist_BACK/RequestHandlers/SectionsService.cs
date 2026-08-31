@@ -6,35 +6,64 @@
 
     public static class SectionsService
     {
-        public static async Task<IResult> Create(ApplicationContext db, HttpRequest request)
+        public static async Task<IResult> Create(
+    ApplicationContext db,
+    HttpRequest request)
         {
-            var data = await request.ReadFromJsonAsync<Dictionary<string, string>>();
+            var data =
+                await request.ReadFromJsonAsync<
+                    Dictionary<string, string>>();
 
             var name = data?["name"];
-            var departmentIdStr = data?["departmentId"];
+
+            var departmentIdStr =
+                data?["departmentId"];
 
             if (string.IsNullOrWhiteSpace(name))
                 return Results.BadRequest("Name is required");
 
-            if (!int.TryParse(departmentIdStr, out int departmentId))
-                return Results.BadRequest("DepartmentId is required");
+            if (!int.TryParse(
+                departmentIdStr,
+                out int departmentId))
+            {
+                return Results.BadRequest(
+                    "DepartmentId is required");
+            }
 
-            var departmentExists = await db.Departments.AnyAsync(d => d.Id == departmentId);
+            var departmentExists =
+                await db.Departments.AnyAsync(
+                    d => d.Id == departmentId);
+
             if (!departmentExists)
-                return Results.NotFound("Department not found");
+                return Results.NotFound(
+                    "Department not found");
 
-            await db.Sections.ExecuteUpdateAsync(s =>
-                s.SetProperty(x => x.PhonesPagePriority, x => x.PhonesPagePriority + 1));
+            await db.Sections.ExecuteUpdateAsync(
+                s => s.SetProperty(
+                    x => x.PhonesPagePriority,
+                    x => x.PhonesPagePriority + 1));
 
             var section = new Section
             {
-                Name = name,
+                Name = name.Trim(),
                 DepartmentId = departmentId,
                 PhonesPagePriority = 1
             };
 
             db.Sections.Add(section);
-            await db.SaveChangesAsync();
+
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Results.Conflict(new
+                {
+                    message =
+                        "Секція з таким іменем уже існує в цьому департаменті."
+                });
+            }
 
             return Results.Ok(section);
         }
@@ -93,48 +122,81 @@
             return Results.Ok();
         }
 
-        public static async Task<IResult> Update(ApplicationContext db, int id, JsonElement body)
+        public static async Task<IResult> Update(
+            ApplicationContext db,
+            int id,
+            JsonElement body)
         {
-            var section = await db.Sections.FindAsync(id);
+            var section =
+                await db.Sections.FindAsync(id);
 
             if (section == null)
                 return Results.NotFound();
 
-            var newName = body.TryGetProperty("name", out var nameProp)
-                ? nameProp.GetString()
-                : null;
+            var newName =
+                body.TryGetProperty(
+                    "name",
+                    out var nameProp)
+                        ? nameProp.GetString()
+                        : null;
 
-            var newAddress = body.TryGetProperty("address", out var addrProp)
-                ? addrProp.GetString()
-                : null;
+            var newAddress =
+                body.TryGetProperty(
+                    "address",
+                    out var addrProp)
+                        ? addrProp.GetString()
+                        : null;
 
-            var newDepartmentId = body.TryGetProperty("departmentId", out var depProp)
-                ? depProp.GetInt32()
-                : (int?)null;
+            var newDepartmentId =
+                body.TryGetProperty(
+                    "departmentId",
+                    out var depProp)
+                        ? depProp.GetInt32()
+                        : (int?)null;
 
-            var newPriority = body.TryGetProperty("phonesPagePriority", out var prProp)
-                ? prProp.GetInt32()
-                : (int?)null;
+            var newPriority =
+                body.TryGetProperty(
+                    "phonesPagePriority",
+                    out var prProp)
+                        ? prProp.GetInt32()
+                        : (int?)null;
 
             if (!string.IsNullOrWhiteSpace(newName))
-                section.Name = newName;
+                section.Name = newName.Trim();
 
             if (!string.IsNullOrWhiteSpace(newAddress))
                 section.Address = newAddress;
 
             if (newDepartmentId.HasValue)
             {
-                var exists = await db.Departments.AnyAsync(d => d.Id == newDepartmentId);
-                if (!exists)
-                    return Results.NotFound("Department not found");
+                var exists =
+                    await db.Departments.AnyAsync(
+                        d => d.Id == newDepartmentId);
 
-                section.DepartmentId = newDepartmentId.Value;
+                if (!exists)
+                    return Results.NotFound(
+                        "Department not found");
+
+                section.DepartmentId =
+                    newDepartmentId.Value;
             }
 
             if (newPriority.HasValue)
-                section.PhonesPagePriority = newPriority;
+                section.PhonesPagePriority =
+                    newPriority;
 
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Results.Conflict(new
+                {
+                    message =
+                        "Секція з таким іменем уже існує в цьому департаменті."
+                });
+            }
 
             return Results.Ok(section);
         }

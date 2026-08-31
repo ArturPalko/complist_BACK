@@ -6,9 +6,14 @@
 
     public static class DepartmentsService
     {
-        public static async Task<IResult> Create(ApplicationContext db, HttpRequest request)
+        public static async Task<IResult> Create(
+     ApplicationContext db,
+     HttpRequest request)
         {
-            var data = await request.ReadFromJsonAsync<Dictionary<string, string>>();
+            var data =
+                await request.ReadFromJsonAsync<
+                    Dictionary<string, string>>();
+
             var name = data?["name"];
 
             if (string.IsNullOrWhiteSpace(name))
@@ -16,11 +21,23 @@
 
             var department = new Department
             {
-                Name = name
+                Name = name.Trim()
             };
 
             db.Departments.Add(department);
-            await db.SaveChangesAsync();
+
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Results.Conflict(new
+                {
+                    message =
+                        "Департамент з таким іменем уже існує."
+                });
+            }
 
             return Results.Ok(department);
         }
@@ -95,28 +112,50 @@
             return Results.Ok();
         }
 
-        public static async Task<IResult> Update(ApplicationContext db, int id, JsonElement body)
+        public static async Task<IResult> Update(
+    ApplicationContext db,
+    int id,
+    JsonElement body)
         {
-            var department = await db.Departments.FindAsync(id);
+            var department =
+                await db.Departments.FindAsync(id);
 
             if (department == null)
                 return Results.NotFound();
 
-            var newName = body.TryGetProperty("name", out var nameProp)
-                ? nameProp.GetString()
-                : null;
+            var newName =
+                body.TryGetProperty(
+                    "name",
+                    out var nameProp)
+                        ? nameProp.GetString()
+                        : null;
 
-            var newPriority = body.TryGetProperty("phonesPagePriority", out var prProp)
-                ? prProp.GetInt32()
-                : (int?)null;
+            var newPriority =
+                body.TryGetProperty(
+                    "phonesPagePriority",
+                    out var prProp)
+                        ? prProp.GetInt32()
+                        : (int?)null;
 
             if (!string.IsNullOrWhiteSpace(newName))
-                department.Name = newName;
+                department.Name = newName.Trim();
 
             if (newPriority.HasValue)
-                department.PhonesPagePriority = newPriority;
+                department.PhonesPagePriority =
+                    newPriority;
 
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Results.Conflict(new
+                {
+                    message =
+                        "Департамент з таким іменем уже існує."
+                });
+            }
 
             return Results.Ok(department);
         }

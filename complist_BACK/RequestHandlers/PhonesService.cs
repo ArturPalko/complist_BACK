@@ -162,56 +162,74 @@ namespace complist_BACK.RequestHandlers
         }
 
 
-        public static async Task<IResult> Create(ApplicationContext db, HttpRequest request)
+        public static async Task<IResult> Create(
+    ApplicationContext db,
+    HttpRequest request)
+{
+    var data =
+        await request.ReadFromJsonAsync<
+            Dictionary<string, JsonElement>>();
+
+    var name = data?["name"].GetString();
+    var type = data["type"].GetInt32();
+
+    var assignedUserIds = data?["assignedUsers"]
+        .EnumerateArray()
+        .Select(x => x.GetInt32())
+        .ToList();
+
+    var users = await db.Users
+        .Where(u => assignedUserIds.Contains(u.Id))
+        .ToListAsync();
+
+    foreach (var user in users)
+    {
+        var oldPhones = await db.Phones
+            .Include(p => p.Users)
+            .Where(p =>
+                p.PhoneTypeId == type &&
+                p.Users.Any(u => u.Id == user.Id))
+            .ToListAsync();
+
+        foreach (var oldPhone in oldPhones)
         {
-            var data = await request.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
-
-            var name = data?["name"].GetString();
-            var type = data["type"].GetInt32();
-
-            var assignedUserIds = data?["assignedUsers"]
-                .EnumerateArray()
-                .Select(x => x.GetInt32())
-                .ToList();
-
-            var users = await db.Users
-    .Where(u => assignedUserIds.Contains(u.Id))
-    .ToListAsync();
-
-            foreach (var user in users)
-            {
-                var oldPhones = await db.Phones
-                    .Include(p => p.Users)
-                    .Where(p =>
-                        p.PhoneTypeId == type &&
-                        p.Users.Any(u => u.Id == user.Id))
-                    .ToListAsync();
-
-                foreach (var oldPhone in oldPhones)
-                {
-                    oldPhone.Users.Remove(user);
-
-
-                }
-            }
-
-            var phone = new Phone
-            {
-                Number = name,
-                PhoneTypeId = type,
-                Users = users
-            };
-
-            db.Phones.Add(phone);
-            await db.SaveChangesAsync();
-
-            return Results.Ok();
+            oldPhone.Users.Remove(user);
         }
+    }
 
+    var phone = new Phone
+    {
+        Number = name,
+        PhoneTypeId = type,
+        Users = users
+    };
 
-        public static async Task<IResult> Edit(ApplicationContext db, int id, HttpRequest request)
+    db.Phones.Add(phone);
+
+    try
+    {
+        await db.SaveChangesAsync();
+    }
+    catch (DbUpdateException)
+    {
+        return Results.Conflict(new
         {
-            var data = await request.ReadFromJsonAsync<Dictionary<string, JsonElement>>();
+            message = "Телефон з таким номером уже існує."
+        });
+    }
+
+    return Results.Ok();
+}
+
+
+        public static async Task<IResult> Edit(
+    ApplicationContext db,
+    int id,
+    HttpRequest request)
+        {
+            var data =
+                await request.ReadFromJsonAsync<
+                    Dictionary<string, JsonElement>>();
 
             var number = data["name"].GetString();
             var phoneTypeId = data["type"].GetInt32();
@@ -232,8 +250,8 @@ namespace complist_BACK.RequestHandlers
                 .Where(u => assignedUserIds.Contains(u.Id))
                 .ToListAsync();
 
-            // Якщо вибраний користувач уже має інший телефон цього типу,
-            // прибираємо цей зв'язок.
+            // Якщо користувач уже має інший телефон цього типу —
+            // прибираємо старий зв'язок
             foreach (var user in users)
             {
                 var oldPhones = await db.Phones
@@ -250,11 +268,11 @@ namespace complist_BACK.RequestHandlers
                 }
             }
 
-            // Оновлюємо дані телефону
+            // Оновлюємо телефон
             phone.Number = number;
             phone.PhoneTypeId = phoneTypeId;
 
-            // Повністю оновлюємо список користувачів телефону
+            // Повністю оновлюємо користувачів
             phone.Users.Clear();
 
             foreach (var user in users)
@@ -262,9 +280,19 @@ namespace complist_BACK.RequestHandlers
                 phone.Users.Add(user);
             }
 
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Results.Conflict(new
+                {
+                    message = "Телефон з таким номером уже існує."
+                });
+            }
 
-            return Results.Ok();
+            return Results.Ok(phone);
         }
 
         public static async Task<IResult> Delete(ApplicationContext db, List<int> ids)

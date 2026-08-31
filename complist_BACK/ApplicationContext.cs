@@ -41,6 +41,36 @@
                 .HasForeignKey(m => m.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<User>()
+            .HasIndex(u => u.Name)
+            .IsUnique()
+            .HasFilter("[Name] IS NOT NULL AND [Name] <> ''");
+
+
+            // ==========================================
+            // UNIQUE NAMES
+            // ==========================================
+
+            // Посади
+            modelBuilder.Entity<Position>()
+                .HasIndex(p => p.Name)
+                .IsUnique();
+
+            // Департаменти
+            modelBuilder.Entity<Department>()
+                .HasIndex(d => d.Name)
+                .IsUnique();
+
+            // Секції
+            modelBuilder.Entity<Section>()
+                .HasIndex(s => s.Name)
+                .IsUnique();
+
+            // Номери телефонів
+            modelBuilder.Entity<Phone>()
+                .HasIndex(p => p.Number)
+                .IsUnique();
+
         } 
     }
 }

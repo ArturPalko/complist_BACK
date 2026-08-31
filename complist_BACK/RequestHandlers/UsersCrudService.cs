@@ -8,6 +8,7 @@
     public static class UsersService
     {
         // CREATE
+
         public static async Task<IResult> Create(
             ApplicationContext db,
             HttpRequest request)
@@ -19,9 +20,19 @@
             var newUser = new User
             {
                 Name = data["name"].GetString(),
-                PositionId = data["positionId"].GetInt32(),
-                UserTypeId = data["userTypeId"].GetInt32(),
-                DepartmentId = data["departmentId"].GetInt32(),
+
+                PositionId =
+                    data["positionId"].ValueKind ==
+                    JsonValueKind.Null
+                        ? null
+                        : data["positionId"].GetInt32(),
+
+                UserTypeId =
+                    data["userTypeId"].GetInt32(),
+
+                DepartmentId =
+                    data["departmentId"].GetInt32(),
+
                 SectionId =
                     data["sectionId"].ValueKind ==
                     JsonValueKind.Null
@@ -31,11 +42,21 @@
 
             db.Users.Add(newUser);
 
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Results.Conflict(new
+                {
+                    message =
+                        "Користувач з таким ім'ям уже існує."
+                });
+            }
 
             return Results.Ok();
         }
-
         // DELETE
         public static async Task<IResult> Delete(
             ApplicationContext db,
@@ -67,16 +88,18 @@
         }
 
         // UPDATE
-        public static async Task<IResult> Update(
-            ApplicationContext db,
-            int id,
-            HttpRequest request)
+
+public static async Task<IResult> Update(
+    ApplicationContext db,
+    int id,
+    HttpRequest request)
         {
             var data =
                 await request.ReadFromJsonAsync<
                     Dictionary<string, JsonElement>>();
 
-            var user = await db.Users.FindAsync(id);
+            var user =
+                await db.Users.FindAsync(id);
 
             if (user == null)
                 return Results.NotFound();
@@ -85,7 +108,10 @@
                 data["name"].GetString();
 
             user.PositionId =
-                data["positionId"].GetInt32();
+                data["positionId"].ValueKind ==
+                JsonValueKind.Null
+                    ? null
+                    : data["positionId"].GetInt32();
 
             user.UserTypeId =
                 data["userTypeId"].GetInt32();
@@ -99,14 +125,27 @@
                     ? null
                     : data["sectionId"].GetInt32();
 
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Results.Conflict(new
+                {
+                    message =
+                        "Користувач з таким ім'ям уже існує."
+                });
+            }
 
             return Results.Ok(user);
         }
 
 
 
-public static async Task<IResult> Transfer(
+
+
+        public static async Task<IResult> Transfer(
     ApplicationContext db,
     HttpRequest request)
         {
