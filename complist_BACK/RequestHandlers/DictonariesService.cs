@@ -12,19 +12,45 @@
                 {
                     id = pt.Id,
                     name = pt.Name,
-                    phones = pt.Phones.Select(p => new
-                    {
-                        id = p.Id,
-                        number = p.Number,
-                        users = p.Users.Select(u => new
+
+                    phones = pt.Phones
+                        .Select(p => new
                         {
-                            id = u.Id,
-                            name = !string.IsNullOrWhiteSpace(u.Name)
-                                ? u.Name
-                                : $"{u.Position.Name} {u.Department.Name}" +
-                                  (u.Section != null ? $" / {u.Section.Name}" : "")
-                        }).ToList()
-                    }).ToList()
+                            id = p.Id,
+                            number = p.Number,
+
+                            users = p.Users
+                                .Select(u => new
+                                {
+                                    id = u.Id,
+
+                                    name =
+                                        !string.IsNullOrWhiteSpace(u.Name)
+                                            ? u.Name
+                                            : (
+                                                (u.Department != null
+                                                    ? u.Department.Name
+                                                    : "")
+                                                +
+                                                (u.Section != null
+                                                    ? $" / {u.Section.Name}"
+                                                    : "")
+                                                +
+                                                (u.Position != null
+                                                    ? $" / {u.Position.Name}"
+                                                    : "")
+                                                +
+                                                (
+                                                    u.UserType != null &&
+                                                    u.UserTypeId != 1
+                                                        ? $" / {u.UserType.Name}"
+                                                        : ""
+                                                )
+                                            )
+                                })
+                                .ToList()
+                        })
+                        .ToList()
                 })
                 .ToListAsync();
 
@@ -55,14 +81,15 @@
                     departmentId = d.Id,
                     departmentName = d.Name,
                     priority = d.PhonesPagePriority,
+
                     presentedOnPhonesPage =
-                    d.Users.Any(u =>
-                        u.SectionId == null &&
-                        u.Phones.Any())
-                    ||
-                    d.Sections.Any(s =>
-                        s.Users.Any(u =>
-                            u.Phones.Any())),
+                        d.Users.Any(u =>
+                            u.SectionId == null &&
+                            u.Phones.Any())
+                        ||
+                        d.Sections.Any(s =>
+                            s.Users.Any(u =>
+                                u.Phones.Any())),
 
                     users = d.Users
                         .Where(u => u.SectionId == null)
@@ -72,8 +99,12 @@
                             name = u.Name,
                             positionId = u.PositionId,
                             userTypeId = u.UserTypeId,
-                            positionName = u.Position != null ? u.Position.Name : null,
-                            userType = u.UserType.Name,
+                            positionName = u.Position != null
+                                ? u.Position.Name
+                                : null,
+                            userType = u.UserType != null
+                                ? u.UserType.Name
+                                : null,
                             isActive = u.IsActive
                         })
                         .ToList(),
@@ -93,9 +124,13 @@
                                     id = u.Id,
                                     name = u.Name,
                                     positionId = u.PositionId,
-                                    positionName = u.Position != null ? u.Position.Name : null,
+                                    positionName = u.Position != null
+                                        ? u.Position.Name
+                                        : null,
                                     userTypeId = u.UserTypeId,
-                                    userType = u.UserType.Name,
+                                    userType = u.UserType != null
+                                        ? u.UserType.Name
+                                        : null,
                                     isActive = u.IsActive
                                 })
                                 .ToList()
@@ -103,44 +138,66 @@
                         .ToList()
                 })
                 .ToListAsync();
+
             var users = await db.Users
                 .Select(u => new
                 {
                     id = u.Id,
 
-                    name = !string.IsNullOrWhiteSpace(u.Name)
-                        ? u.Name
-                        : $"{u.Position.Name} {u.Department.Name}" +
-                          (u.Section != null
-                              ? $" / {u.Section.Name}"
-                              : ""),
+                    name =
+                        !string.IsNullOrWhiteSpace(u.Name)
+                            ? u.Name
+                            : (
+                                (u.Department != null
+                                    ? u.Department.Name
+                                    : "")
+                                +
+                                (u.Section != null
+                                    ? $" / {u.Section.Name}"
+                                    : "")
+                                +
+                                (u.Position != null
+                                    ? $" / {u.Position.Name}"
+                                    : "")
+                                +
+                                (
+                                    u.UserType != null &&
+                                    u.UserTypeId != 1
+                                        ? $" / {u.UserType.Name}"
+                                        : ""
+                                )
+                            ),
+
                     customName = string.IsNullOrWhiteSpace(u.Name),
+
                     userType = u.UserType != null
                         ? u.UserType.Name
                         : null,
 
                     department = u.Department != null
                         ? u.Department.Name
-                        : u.Section != null && u.Section.Department != null
+                        : u.Section != null &&
+                          u.Section.Department != null
                             ? u.Section.Department.Name
                             : null,
 
                     section = u.Section != null
                         ? u.Section.Name
                         : null,
+
                     isActive = u.IsActive
                 })
                 .ToListAsync();
 
             var sections = await db.Sections
-         .OrderBy(s => s.PhonesPagePriority)
-         .Select(s => new
-         {
-             id = s.Id,
-             name = s.Name,
-             departmentId = s.DepartmentId
-         })
-         .ToListAsync();
+                .OrderBy(s => s.PhonesPagePriority)
+                .Select(s => new
+                {
+                    id = s.Id,
+                    name = s.Name,
+                    departmentId = s.DepartmentId
+                })
+                .ToListAsync();
 
             var deps = await db.Departments
                 .OrderBy(d => d.PhonesPagePriority)
@@ -164,3 +221,4 @@
         }
     }
 }
+
