@@ -292,7 +292,7 @@ namespace complist_BACK.RequestHandlers
                 });
             }
 
-            return Results.Ok(phone);
+            return Results.Ok();
         }
 
         public static async Task<IResult> Delete(ApplicationContext db, List<int> ids)

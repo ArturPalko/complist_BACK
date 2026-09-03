@@ -88,7 +88,7 @@
                 return Results.Ok();
             }
 
-            if (pageName == "userType")
+            if (pageName == "userTypes")
             {
                 var items = data.ValueKind == JsonValueKind.Array
                     ? data
