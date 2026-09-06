@@ -15,24 +15,21 @@
             ApplicationContext db,
             HttpContext httpContext)
         {
-            // 1️⃣ Знайти користувача
             var user = await db.Set<Login>()
                 .FirstOrDefaultAsync(x => x.LoginName == request.LoginName);
 
             if (user == null)
                 return Results.BadRequest("User not found");
 
-            // 2️⃣ Перевірити пароль (ПОКИ без хешування)
             if (user.Password != request.Password)
                 return Results.BadRequest("Invalid password");
 
-            // 3️⃣ Створити claims
             var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.LoginName),
-            new Claim(ClaimTypes.Role, "Admin")
-        };
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.LoginName),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
 
             var identity = new ClaimsIdentity(
                 claims,
@@ -40,10 +37,16 @@
 
             var principal = new ClaimsPrincipal(identity);
 
-            // 4️⃣ Авторизація через cookie
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddYears(10)
+            };
+
             await httpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                principal);
+                principal,
+                authProperties);
 
             return Results.Ok(new
             {
@@ -52,11 +55,13 @@
                 userName = user.LoginName
             });
         }
+
         public static async Task<IResult> LogOut(HttpContext context)
         {
             await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Results.Ok(new { message = "Logged out successfully" });
         }
+
         public static IResult ChechAuthorization(HttpContext context)
         {
             if (!context.User.Identity?.IsAuthenticated ?? true)
@@ -72,5 +77,4 @@
             return Results.Ok(authData);
         }
     }
-    }
-
+}

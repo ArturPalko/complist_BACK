@@ -17,14 +17,13 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -41,9 +40,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.LoginPath = "/login";
         options.LogoutPath = "/logout";
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+
+        options.Cookie.MaxAge = TimeSpan.FromDays(3650);
+
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
     });
 
 builder.Services.AddAuthorization(options =>
@@ -55,18 +57,26 @@ builder.Services.AddAuthorization(options =>
 var app = builder.Build();
 
 app.UseCors("AllowFrontend");
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.CompleteAsync();
+        return;
+    }
+    await next();
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
-
-
 
 app.Map("/mails/{mailType}", async (string mailType, ApplicationContext db) =>
     await MailsService.GetMails(mailType, db));
 
 app.Map("/phones/", async (ApplicationContext db) =>
     await PhonesService.GetPhones(db));
-
-
 
 app.MapGet("/checkAuth", (HttpContext context) =>
     LoginService.ChechAuthorization(context))
@@ -80,8 +90,6 @@ app.MapPost("/login", (
 
 app.MapPost("/logout", (HttpContext context) =>
     LoginService.LogOut(context));
-
-
 
 var privateApi = app.MapGroup("/api")
     .RequireAuthorization("AdminOnly");
@@ -110,7 +118,6 @@ privateApi.MapPut("/userTypes/{id:int}", UserTypesService.Update);
 privateApi.MapPost("/users", UsersService.Create);
 privateApi.MapPut("/users/{id:int}", UsersService.Update);
 privateApi.MapPost("/users/delete", UsersService.Delete);
-
 
 privateApi.MapPost("/phones", PhonesService.Create);
 privateApi.MapPut("/phones/{id:int}", PhonesService.Edit);
